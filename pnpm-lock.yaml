@@ -39,9 +39,6 @@ importers:
         specifier: ^3.24.1
         version: 3.24.1
     devDependencies:
-      '@repo/biome-config':
-        specifier: workspace:*
-        version: link:../../packages/biome-config
       '@repo/typescript-config':
         specifier: workspace:*
         version: link:../../packages/typescript-config
@@ -70,9 +67,6 @@ importers:
         specifier: ^19.0.0
         version: 19.0.0(react@19.0.0)
     devDependencies:
-      '@repo/biome-config':
-        specifier: workspace:*
-        version: link:../../packages/biome-config
       '@repo/typescript-config':
         specifier: workspace:*
         version: link:../../packages/typescript-config
