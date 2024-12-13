@@ -1,0 +1,9 @@
+{
+    "extends": [
+        // Extending the base config by having it as a package dependency
+        // is not working. It seems that the biome extension is not able
+        // to find the config file. So, we are just using the direct path
+        // to the config file.
+        "./packages/biome-config/base.json"
+    ]
+}
