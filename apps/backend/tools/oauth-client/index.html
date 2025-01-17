@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset=" UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clouddy OAuth Client Tool</title>
+</head>
+
+<body style="inset: 0">
+    <div style="inset: 0; display: flex; justify-content: center; align-items: center; gap: 4px">
+        <button id="login-btn" style="padding: 4px" disabled>Login</button>
+        <button id="logout-btn" style="padding: 4px" disabled>Logout</button>
+        <button id="reset-btn" style="padding: 4px">Reset</button>
+    </div>
+
+    <!-- <div style="inset: 0; display: flex; justify-content: center; align-items: center; gap: 4px"> -->
+    <p id="login-status" style="text-align: center"></p>
+    <p id="login-payload" style="text-align: center"></p>
+    <!-- </div> -->
+
+    <script type="module">
+        const BE = "http://localhost:3500/api"
+
+        // Initialize buttons
+        const resetBtn = document.querySelector("#reset-btn")
+        const loginBtn = document.querySelector("#login-btn")
+        const logoutBtn = document.querySelector("#logout-btn")
+
+        resetBtn.addEventListener("click", () => {
+            window.location.href = window.location.origin
+        })
+        loginBtn.addEventListener("click", () => {
+            window.location.href = `${BE}/auth/login/google`
+        });
+        logoutBtn.addEventListener("click", async () => {
+            const resp = await fetch(`${BE}/auth/logout`, {
+                // The server would send Set-Cookie header to clear the
+                // cookie. Since we are using cors, we need to opt-in to
+                // receive set-cookie.
+                credentials: "include"
+            })
+            const isLoggedOut = resp.ok;
+            if (isLoggedOut) {
+                // Send user back to the root page
+                window.location.href = window.location.origin;
+            }
+        })
+
+
+        async function loginOrSendCode() {
+            const queryParams = new URLSearchParams(window.location.search);
+            const isOAuthCallback = queryParams.has("code") && queryParams.has("scope");
+            if (isOAuthCallback) {
+                const resp = await fetch(`${BE}/auth/login/google/callback?${queryParams.toString()}`, {
+                    // This is a CORS requests. Enable sending
+                    // cross-origin cookies.
+                    credentials: "include"
+                })
+                console.log(await resp.text());
+            } else {
+            }
+        }
+        await loginOrSendCode();
+
+
+        async function updateLoggedInStatus() {
+            const resp = await fetch(`${BE}/auth/me`, {
+                credentials: "include"
+            });
+
+            const isLoggedIn = resp.ok;
+            if (isLoggedIn) {
+                logoutBtn.removeAttribute("disabled");
+            } else {
+                loginBtn.removeAttribute("disabled");
+            }
+
+            const loginStatus = document.querySelector("#login-status")
+            loginStatus.innerText = isLoggedIn ? "Logged in" : "Not logged in";
+            const loginPayload = document.querySelector("#login-payload")
+            loginPayload.innerText = isLoggedIn ? JSON.stringify(await resp.json(), null, 2) : "";
+        }
+        await updateLoggedInStatus();
+
+    </script>
+</body>
+
+</html>
