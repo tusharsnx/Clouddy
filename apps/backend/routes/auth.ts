@@ -1,15 +1,16 @@
 import { Router } from "express";
 import { StatusCodes } from "http-status-codes";
 import { envs } from "../envs.ts";
+import { authenticate } from "../services/auth-service/authenticator.ts";
 import { signInMiddleware } from "../services/auth-service/signin.ts";
-import { createAuthnHandler } from "../utils/create-handler.ts";
+import { createSafeHandler } from "../utils/create-handler.ts";
 
 const router = Router();
 
 router.get(
   "/me",
-  createAuthnHandler((req, resp) => {
-    const user = req.user;
+  createSafeHandler(async (req, resp) => {
+    const user = await authenticate(req);
     resp.status(StatusCodes.OK).json(user);
   }),
 );
@@ -29,7 +30,7 @@ router.get("/login/google/callback", signInMiddleware);
  */
 router.get(
   "/logout",
-  createAuthnHandler((req, resp) => {
+  createSafeHandler((req, resp) => {
     // User is logged in when the token cookies is found.
     // So, reset the cookie to log out the user.
     resp.cookie(envs.TOKEN_ID, "", { maxAge: -1 });

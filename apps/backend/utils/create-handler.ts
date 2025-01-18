@@ -1,28 +1,11 @@
 import type { NextFunction, Request, Response } from "express";
-import {
-  type AuthnRequest,
-  authenticateRequest,
-} from "../services/auth-service/middleware.ts";
 
-export function createHandler(
-  handler: (req: Request, resp: Response) => Promise<void> | void,
+export function createSafeHandler<Req extends Request, Res extends Response>(
+  handler: (req: Req, resp: Res) => Promise<void> | void,
 ) {
-  return async (req: Request, resp: Response, next: NextFunction) => {
+  return async (req: Req, resp: Res, next: NextFunction) => {
     try {
       await handler(req, resp);
-    } catch (e) {
-      next(e);
-    }
-  };
-}
-
-export function createAuthnHandler(
-  handler: (req: AuthnRequest, resp: Response) => void | Promise<void>,
-) {
-  return async (req: Request, resp: Response, next: NextFunction) => {
-    try {
-      const authnReq = await authenticateRequest(req);
-      await handler(authnReq, resp);
     } catch (e) {
       next(e);
     }

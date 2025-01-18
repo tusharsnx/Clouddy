@@ -1,13 +1,8 @@
-import {
-  ApplicationError,
-  type ControllerError,
-  type ServiceError,
-} from "./types.ts";
+import { ApplicationError, type ApplicationErrorType } from "./types.ts";
 
-type AnyApplicationError = ServiceError | ControllerError;
 export function assertNotUndefined<T>(
   value: unknown,
-  type: AnyApplicationError,
+  type: ApplicationErrorType,
   message: string,
   reason?: unknown,
 ): asserts value {
@@ -18,7 +13,7 @@ export function assertNotUndefined<T>(
 
 export function assertTrue(
   value: boolean,
-  type: AnyApplicationError,
+  type: ApplicationErrorType,
   message: string,
   reason?: unknown,
 ): asserts value {

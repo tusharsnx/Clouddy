@@ -5,10 +5,7 @@ import { assertTrue } from "../application-error-service/helpers.ts";
 import { UserService } from "../user-service.ts";
 import { AuthService } from "./service.ts";
 
-export type AuthnRequest = Omit<Request, "user"> & { user: UserModel };
-export async function authenticateRequest(
-  req: Omit<Request, "user"> & { user?: unknown },
-): Promise<AuthnRequest> {
+export async function authenticate(req: Request): Promise<UserModel> {
   const token = req.cookies[envs.TOKEN_ID] as string | undefined;
   assertTrue(
     token !== undefined && token !== "",
@@ -17,7 +14,5 @@ export async function authenticateRequest(
   );
 
   const { id: userId } = await AuthService.verifyToken(token);
-  const user = await UserService.getUser(userId);
-  const authnReq = Object.assign(req, { user });
-  return authnReq;
+  return await UserService.getUser(userId);
 }

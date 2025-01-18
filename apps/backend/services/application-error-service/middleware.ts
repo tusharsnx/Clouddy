@@ -1,39 +1,52 @@
 import type { NextFunction, Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
+import { z } from "zod";
+import { getZodErrorMessage } from "../../utils/zod-message.ts";
 import { ApplicationError } from "./types.ts";
 
+type ErrorResponsePayload = {
+  message: string;
+  reason?: string;
+};
+
 function handleApplicationError(err: ApplicationError, resp: Response) {
+  // Get status code
+  let statusCode = StatusCodes.INTERNAL_SERVER_ERROR;
   switch (err.type) {
     case "NotFound":
-      resp
-        .status(StatusCodes.NOT_FOUND)
-        .json({ message: err.message, reason: err.reason });
+      statusCode = StatusCodes.NOT_FOUND;
       break;
     case "Unauthenticated":
-      resp
-        .status(StatusCodes.UNAUTHORIZED)
-        .json({ message: err.message, reason: err.reason });
+      statusCode = StatusCodes.UNAUTHORIZED;
       break;
     case "Unauthorized":
-      resp
-        .status(StatusCodes.FORBIDDEN)
-        .json({ message: err.message, reason: err.reason });
+      statusCode = StatusCodes.FORBIDDEN;
       break;
     case "BadRequest":
-      resp
-        .status(StatusCodes.BAD_REQUEST)
-        .json({ message: err.message, reason: err.reason });
+      statusCode = StatusCodes.BAD_REQUEST;
       break;
     case "OperationFailed":
-      resp
-        .status(StatusCodes.INTERNAL_SERVER_ERROR)
-        .json({ message: err.message, reason: err.reason });
+      statusCode = StatusCodes.INTERNAL_SERVER_ERROR;
       break;
-    default:
-      resp
-        .status(StatusCodes.INTERNAL_SERVER_ERROR)
-        .json({ message: err.message, reason: err.reason });
   }
+
+  // Construct response payload
+  const payload: ErrorResponsePayload = {
+    message: err.message,
+  };
+
+  // Add reason if available
+  if (err.reason instanceof Error) {
+    let reasonMsg = err.reason.message;
+    if (err.reason instanceof z.ZodError) {
+      reasonMsg = getZodErrorMessage(err.reason);
+    }
+
+    payload.reason = reasonMsg;
+  }
+
+  // Send response
+  resp.status(statusCode).json(payload);
 }
 
 export async function ApplicationErrorServiceMiddleware(
@@ -42,6 +55,12 @@ export async function ApplicationErrorServiceMiddleware(
   resp: Response,
   next: NextFunction,
 ) {
+  if (resp.headersSent) {
+    // Headers already sent. Don't send anything else.
+    resp.send();
+    return;
+  }
+
   if (err instanceof ApplicationError) {
     handleApplicationError(err, resp);
     return;
