@@ -21,3 +21,5 @@ export function assertTrue(
     throw new ApplicationError(type, message, reason);
   }
 }
+
+export const canRetry = (e: ApplicationError) => e.fault === "server";

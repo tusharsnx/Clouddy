@@ -1,19 +1,23 @@
-export type ServiceError =
+export type ApplicationErrorType =
   | "NotFound"
   | "Unauthorized"
   | "Unauthenticated"
   | "BadRequest"
-  | "OperationFailed";
-export type ControllerError = "BadRequest" | "InternalServerError";
-export type ApplicationErrorType = ServiceError | ControllerError;
+  | "OperationFailed"
+  | "InternalServerError";
 
 export class ApplicationError extends Error {
   type: ApplicationErrorType;
   reason: unknown;
+  fault: "server" | "client";
 
   constructor(type: ApplicationErrorType, message: string, reason?: unknown) {
     super(message);
     this.type = type;
     this.reason = reason;
+    this.fault =
+      type === "OperationFailed" || type === "InternalServerError"
+        ? "server"
+        : "client";
   }
 }

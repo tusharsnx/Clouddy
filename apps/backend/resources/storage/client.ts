@@ -2,12 +2,14 @@ import {
   CopyObjectCommand,
   DeleteObjectCommand,
   GetObjectCommand,
+  HeadObjectCommand,
   PutObjectCommand,
   S3Client,
   S3ServiceException,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { UploadRequestMaxAge } from "../../constants.ts";
+import { z } from "zod";
+import { UploadRequestMaxAgeSecs } from "../../constants.ts";
 import { envs } from "../../envs.ts";
 import { TaskExecutor } from "../../task-executor.ts";
 
@@ -27,6 +29,29 @@ const executor = new TaskExecutor({
 });
 
 export const StorageClient = {
+  /**
+   * Returns metadata for the object with the given key
+   */
+  async getFileMetadata(key: string) {
+    const cmdResult = await s3Client.send(
+      new HeadObjectCommand({
+        Bucket: envs.S3_BUCKET,
+        Key: key,
+      }),
+    );
+    const { ContentLength, ContentType } = z
+      .object({
+        ContentLength: z.number(),
+        ContentType: z.string().nonempty(),
+      })
+      .parse(cmdResult);
+
+    return {
+      contentLength: ContentLength,
+      contentType: ContentType,
+    };
+  },
+
   /**
    * Get object stream for a given key
    * @returns A readable stream of the object
@@ -54,7 +79,7 @@ export const StorageClient = {
     });
 
     return getSignedUrl(s3Client, command, {
-      expiresIn: UploadRequestMaxAge,
+      expiresIn: UploadRequestMaxAgeSecs,
     });
   },
 
@@ -68,9 +93,9 @@ export const StorageClient = {
    */
   async moveFile(key: string, newKey: string) {
     const copyCmd = new CopyObjectCommand({
+      CopySource: `${envs.S3_BUCKET}/${key}`,
       Bucket: envs.S3_BUCKET,
-      Key: key,
-      CopySource: `${envs.S3_BUCKET}/${newKey}`,
+      Key: newKey,
     });
     await s3Client.send(copyCmd);
 
@@ -88,7 +113,7 @@ export const StorageClient = {
     const keys = Array.isArray(key) ? key : [key];
     await Promise.allSettled(
       keys.map((key) => {
-        executor.execute(() => this.moveFile(key, `${BinDir}/${key}`));
+        this.moveFile(key, `${BinDir}/${key}`);
       }),
     );
   },

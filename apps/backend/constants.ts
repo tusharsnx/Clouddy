@@ -60,5 +60,6 @@ export const ContentTypes = [
   { extension: ".bin", mimeType: "application/octet-stream" },
 ] as const;
 
-export const UploadRequestMaxAge = 60 * 1000; // 1 Min
-export const MaxUsageLimit = 10 * 1024 * 1024; // 10 MB
+export const MimeTypes = new Set<string>(ContentTypes.map((t) => t.mimeType));
+export const UploadRequestMaxAgeSecs = 60; // 1 Min
+export const MaxUsageLimitBytes = 10 * 1024 * 1024; // 10 MB

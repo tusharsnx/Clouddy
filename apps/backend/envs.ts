@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getZodErrorMessage } from "./utils/zod-message.ts";
 
 const envSchema = z.object({
+  NODE_ENV: z.enum(["development", "production"]),
   DB_ENDPOINT: z.string().nonempty(),
   GOOGLE_CLIENT_ID: z.string().nonempty(),
   GOOGLE_CLIENT_SECRET: z.string().nonempty(),

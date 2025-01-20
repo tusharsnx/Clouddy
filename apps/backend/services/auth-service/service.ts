@@ -1,11 +1,11 @@
 import jwt from "jsonwebtoken";
 import { z } from "zod";
 import { envs } from "../../envs.ts";
-import type { UserModel } from "../../resources/db/schemas.ts";
+import type { UserModel } from "../../routes/models.ts";
 import { assertTrue } from "../application-error-service/helpers.ts";
 
 const TokenAudience = "clouddy";
-export const TokenMaxAgeSec = 5 * 60; // 5 minutes
+export const TokenMaxAgeSec = 30 * 60; // 30 minutes
 const TokenIssuer = "clouddy";
 
 export const TokenPayloadSchema = z.object({
