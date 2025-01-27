@@ -30,9 +30,9 @@ app.use(
 );
 
 // Routes
-app.use("/api/auth", authRouter);
-app.use("/api/users", usersRouter);
-app.use("/api/files", filesRouter);
+app.use("/auth", authRouter);
+app.use("/users", usersRouter);
+app.use("/files", filesRouter);
 
 // Error handler
 app.use(ApplicationErrorServiceMiddleware);
