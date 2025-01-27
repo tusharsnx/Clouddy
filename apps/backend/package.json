@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "description": "",
   "type": "module",
-  "main": "index.ts",
   "scripts": {
     "start": "tsx index.ts",
     "dev": "tsx --watch index.ts",
+    "lint": "tsc --noEmit",
     "drizzle:ui": "drizzle-kit studio",
     "drizzle:push": "drizzle-kit push",
     "tool:oauth": "npx http-serve -p 5500 ./tools/oauth-client"

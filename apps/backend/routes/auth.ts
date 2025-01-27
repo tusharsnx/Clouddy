@@ -1,14 +1,14 @@
 import { Router } from "express";
 import { StatusCodes } from "http-status-codes";
-import { envs } from "../envs.ts";
+import passport from "passport";
+import { TokenName, isDev } from "../constants.ts";
 import {
   assertNotUndefined,
   assertTrue,
 } from "../services/application-error-service/helpers.ts";
-import { authenticate } from "../services/auth-service/authenticator.ts";
-import { AuthService } from "../services/auth-service/service.ts";
-import { signInMiddleware } from "../services/auth-service/signin.ts";
-import { writeToken } from "../services/auth-service/token-writer.ts";
+import { initLoginProviders } from "../services/login.ts";
+import { authenticate } from "../services/session.ts";
+import { getCookieOptions, getToken } from "../services/session.ts";
 import { UserService } from "../services/user-service.ts";
 import { createSafeHandler } from "../utils/create-handler.ts";
 import type { CreateUserModel } from "./models.ts";
@@ -23,15 +23,23 @@ router.get(
   }),
 );
 
-/**
- * Redirects user to google's OAuth endpoint.
- */
-router.get("/login/google", signInMiddleware);
+// Initialize login providers
+initLoginProviders();
+
+const loginHandler = createSafeHandler(
+  // We don't need passport's session management
+  passport.authenticate("google", { session: false }),
+);
 
 /**
- * Receives OAuth exchange code and registers the user.
+ * Redirects to Google OAuth endpoint.
  */
-router.get("/login/google/callback", signInMiddleware);
+router.get("/login/google", loginHandler);
+
+/**
+ * Google OAuth callback.
+ */
+router.get("/login/google/callback", loginHandler);
 
 /**
  * Logs out the user.
@@ -41,13 +49,15 @@ router.get(
   createSafeHandler((req, resp) => {
     // User is logged in when the token cookies is found.
     // So, reset the cookie to log out the user.
-    resp.cookie(envs.TOKEN_ID, "", { maxAge: -1 });
+
+    const host = req.header("X-Forwarded-Host") ?? req.header("host");
+    resp.cookie(TokenName, "", getCookieOptions(host, true));
     resp.status(StatusCodes.NO_CONTENT).send();
   }),
 );
 
 // Extra routes only available in development
-if (envs.NODE_ENV === "development") {
+if (isDev) {
   const TestUsers = [
     { name: "Test User 1", email: "testuser1@gmail.com", picture: "" },
     { name: "Test User 2", email: "testuser2@gmail.com", picture: "" },
@@ -67,9 +77,9 @@ if (envs.NODE_ENV === "development") {
       assertNotUndefined(userData, "NotFound", "Test user not found.");
 
       const user = await UserService.getOrCreateUser(userData);
-      const token = await AuthService.getSignedToken(user);
+      const host = req.header("X-Forwarded-Host") ?? req.header("host");
+      resp.cookie(TokenName, await getToken(user), getCookieOptions(host));
 
-      writeToken(resp, token);
       resp.status(StatusCodes.OK).json({ user });
     }),
   );

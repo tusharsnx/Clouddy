@@ -4,8 +4,8 @@ import {
   assertNotUndefined,
   assertTrue,
 } from "../services/application-error-service/helpers.ts";
-import { authenticate } from "../services/auth-service/authenticator.ts";
 import { FileService } from "../services/file-service.ts";
+import { authenticate } from "../services/session.ts";
 import { UserService } from "../services/user-service.ts";
 import { createSafeHandler } from "../utils/create-handler.ts";
 import { validate } from "../utils/validators.ts";
