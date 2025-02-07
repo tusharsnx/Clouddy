@@ -22,7 +22,12 @@ export async function exchange(provider: string, params: string) {
   const resp = await fetch(getApiURL(`/auth/login/${provider}/callback?${params}`), {
     credentials: "include"
   });
-  return resp.ok;
+  if (!resp.ok) {
+    return undefined;
+  }
+
+  const { data: user } = UserSchema.safeParse(await resp.json());
+  return user;
 }
 
 export function login(provider: string) {

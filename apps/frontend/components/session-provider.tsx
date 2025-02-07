@@ -28,15 +28,6 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     session.login(provider);
   }
 
-  async function exchange(provider: string) {
-    // The code is in the URL search params
-    const searchParams = new URLSearchParams(window.location.search);
-    const success = await session.exchange(provider, searchParams.toString());
-    if (!success) return;
-    await queryClient.refetchQueries({ queryKey: ["session"] });
-    window.history.replaceState(null, "", window.location.pathname);
-  }
-
   async function logout() {
     const result = await session.logout();
     if (!result) return;
@@ -44,8 +35,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     redirect("/login");
   }
 
-  async function loadSession() {
-    const user = await session.getLoggedInUser();
+  function getSessionContext(user?: session.User) {
     return (
       user
         ? {
@@ -60,6 +50,20 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
             exchange,
           }
     ) satisfies SessionContext;
+  }
+
+  async function exchange(provider: string) {
+    // The code is in the URL search params
+    const searchParams = new URLSearchParams(window.location.search);
+    const user = await session.exchange(provider, searchParams.toString());
+    if (!user) return;
+    queryClient.setQueryData(["session"], getSessionContext(user));
+    window.history.replaceState(null, "", window.location.pathname);
+  }
+
+  async function loadSession() {
+    const user = await session.getLoggedInUser();
+    return getSessionContext(user);
   }
 
   const query = useQuery<SessionContext>({
