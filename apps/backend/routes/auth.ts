@@ -6,6 +6,7 @@ import {
   assertNotUndefined,
   assertTrue,
 } from "../services/application-error-service/helpers.ts";
+import { ApplicationError } from "../services/application-error-service/types.ts";
 import { initLoginProviders } from "../services/login.ts";
 import { authenticate } from "../services/session.ts";
 import { getCookieOptions, getToken } from "../services/session.ts";
@@ -29,6 +30,13 @@ initLoginProviders();
 const loginHandler = createSafeHandler(
   // We don't need passport's session management
   passport.authenticate("google", { session: false }),
+  (e, next) => {
+    // Handle passport's invalid token errors
+    if (e !== null && typeof e === "object" && "code" in e && e.code === "invalid_grant") {
+      next(new ApplicationError("Unauthenticated", "Invalid authentication code"));
+    }
+    next(e);
+  }
 );
 
 /**
