@@ -1,26 +1,25 @@
 import { Router } from "express";
 import { StatusCodes } from "http-status-codes";
 import passport from "passport";
-import { TokenName, isDev } from "../constants.ts";
+import { isDev } from "#/constants.ts";
+import type { CreateUser } from "#/routes/models.ts";
 import {
   assertNotUndefined,
   assertTrue,
-} from "../services/application-error-service/helpers.ts";
-import { ApplicationError } from "../services/application-error-service/types.ts";
-import { initLoginProviders } from "../services/login.ts";
-import { authenticate } from "../services/session.ts";
-import { getCookieOptions, getToken } from "../services/session.ts";
-import { UserService } from "../services/user-service.ts";
-import { createSafeHandler } from "../utils/create-handler.ts";
-import type { CreateUserModel } from "./models.ts";
+} from "#/services/application-error-service/helpers.ts";
+import { ApplicationError } from "#/services/application-error-service/types.ts";
+import { initLoginProviders } from "#/services/login.ts";
+import { authenticate, login, logout } from "#/services/session/middleware.ts";
+import { UserService } from "#/services/user-service.ts";
+import { createSafeHandler } from "#/utils/create-handler.ts";
 
 const router = Router();
 
 router.get(
   "/me",
   createSafeHandler(async (req, resp) => {
-    const user = await authenticate(req);
-    resp.status(StatusCodes.OK).json(user);
+    const session = await authenticate(req, resp);
+    resp.status(StatusCodes.OK).json(session.user);
   }),
 );
 
@@ -28,15 +27,21 @@ router.get(
 initLoginProviders();
 
 const loginHandler = createSafeHandler(
-  // We don't need passport's session management
   passport.authenticate("google", { session: false }),
   (e, next) => {
     // Handle passport's invalid token errors
-    if (e !== null && typeof e === "object" && "code" in e && e.code === "invalid_grant") {
-      next(new ApplicationError("Unauthenticated", "Invalid authentication code"));
+    if (
+      e !== null &&
+      typeof e === "object" &&
+      "code" in e &&
+      e.code === "invalid_grant"
+    ) {
+      next(
+        new ApplicationError("Unauthenticated", "Invalid authentication code"),
+      );
     }
     next(e);
-  }
+  },
 );
 
 /**
@@ -52,14 +57,11 @@ router.get("/login/google/callback", loginHandler);
 /**
  * Logs out the user.
  */
-router.get(
+router.post(
   "/logout",
-  createSafeHandler((req, resp) => {
-    // User is logged in when the token cookies is found.
-    // So, reset the cookie to log out the user.
-
-    const host = req.header("X-Forwarded-Host") ?? req.header("host");
-    resp.cookie(TokenName, "", getCookieOptions(host, true));
+  createSafeHandler(async (req, resp) => {
+    const { sid } = await authenticate(req, resp);
+    await logout(sid, req, resp);
     resp.status(StatusCodes.NO_CONTENT).send();
   }),
 );
@@ -69,7 +71,7 @@ if (isDev) {
   const TestUsers = [
     { name: "Test User 1", email: "testuser1@gmail.com", picture: "" },
     { name: "Test User 2", email: "testuser2@gmail.com", picture: "" },
-  ] as const satisfies CreateUserModel[];
+  ] as const satisfies CreateUser[];
 
   router.get(
     "/dev/code/:id",
@@ -85,9 +87,8 @@ if (isDev) {
       assertNotUndefined(userData, "NotFound", "Test user not found.");
 
       const user = await UserService.getOrCreateUser(userData);
-      const host = req.header("X-Forwarded-Host") ?? req.header("host");
-      resp.cookie(TokenName, await getToken(user), getCookieOptions(host));
 
+      await login(user.id, req, resp);
       resp.status(StatusCodes.OK).json({ user });
     }),
   );

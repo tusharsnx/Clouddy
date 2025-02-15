@@ -12,7 +12,7 @@ const envSchema = z.object({
   S3_BUCKET: z.string().nonempty(),
   S3_ACCESS_KEY_ID: z.string().nonempty(),
   S3_SECRET_ACCESS_KEY: z.string().nonempty(),
-  TOKEN_SECRET: z.string().nonempty(),
+  TOKEN_SECRET: z.string().nonempty().min(32),
 });
 
 function loadEnvs() {

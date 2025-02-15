@@ -1,15 +1,15 @@
 import { Router } from "express";
 import { StatusCodes } from "http-status-codes";
+import { UpdateUserSchema } from "#/routes/models.ts";
 import {
   assertNotUndefined,
   assertTrue,
-} from "../services/application-error-service/helpers.ts";
-import { FileService } from "../services/file-service.ts";
-import { authenticate } from "../services/session.ts";
-import { UserService } from "../services/user-service.ts";
-import { createSafeHandler } from "../utils/create-handler.ts";
-import { validate } from "../utils/validators.ts";
-import { UpdateUserModel } from "./models.ts";
+} from "#/services/application-error-service/helpers.ts";
+import { FileService } from "#/services/file-service.ts";
+import { authenticate } from "#/services/session/middleware.ts";
+import { UserService } from "#/services/user-service.ts";
+import { createSafeHandler } from "#/utils/create-handler.ts";
+import { validate } from "#/utils/validators.ts";
 
 const router = Router();
 export const usersRouter = router;
@@ -20,16 +20,16 @@ router.put(
     const userId = req.params.id;
     assertNotUndefined(userId, "BadRequest", "Invalid user id");
 
-    const user = await authenticate(req);
+    const session = await authenticate(req, resp);
 
     assertTrue(
-      userId === user.id,
+      userId === session.user.id,
       "Unauthorized",
       "The id did not match the authenticated user id",
     );
 
     // validate data and update user
-    const userData = validate(UpdateUserModel, req.body);
+    const userData = validate(UpdateUserSchema, req.body);
     const updatedUser = await UserService.updateUser(userId, userData);
     resp.status(StatusCodes.OK).send({ user: updatedUser });
   }),
@@ -41,10 +41,10 @@ router.delete(
     const userId = req.params.id;
     assertNotUndefined(userId, "BadRequest", "Invalid user id");
 
-    const user = await authenticate(req);
+    const session = await authenticate(req, resp);
 
     assertTrue(
-      userId === user.id,
+      userId === session.user.id,
       "Unauthorized",
       "The id did not match the authenticated user id",
     );
@@ -60,14 +60,14 @@ router.get(
     const id = req.params.id;
     assertNotUndefined(id, "BadRequest", "User Id is missing.");
 
-    const user = await authenticate(req);
+    const session = await authenticate(req, resp);
     assertTrue(
-      user.id === id,
+      session.user.id === id,
       "Unauthorized",
       "User id does not match authenticated user id.",
     );
 
-    const files = await FileService.getFilesByUser(user);
+    const files = await FileService.getFilesByUser(session.user);
     resp.status(StatusCodes.OK).json({
       files: files,
     });

@@ -1,4 +1,4 @@
-import { relations } from "drizzle-orm";
+import { relations as drizzleRelation } from "drizzle-orm";
 import {
   bigint,
   doublePrecision,
@@ -7,8 +7,8 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 import { pgTable } from "drizzle-orm/pg-core";
-import { MaxIDLength, UploadRequestMaxAgeSecs } from "../../constants.ts";
-import { createRandomId } from "../../utils.ts";
+import { MaxIDLength, UploadRequestMaxAgeSecs } from "#/constants.ts";
+import { createRandomId } from "#/utils/misc.ts";
 
 export const users = pgTable("users", {
   id: varchar({ length: MaxIDLength })
@@ -19,11 +19,6 @@ export const users = pgTable("users", {
   picture: varchar({ length: 1024 }).notNull(),
   quotaRemaining: doublePrecision().notNull(),
 });
-
-export const usersRelations = relations(users, ({ many }) => ({
-  files: many(files),
-  uploadRequests: many(uploadRequests),
-}));
 
 export const files = pgTable(
   "files",
@@ -45,13 +40,6 @@ export const files = pgTable(
   },
   (table) => [index("owner_id_idx").on(table.ownerId)],
 );
-
-export const filesRelations = relations(files, ({ one }) => ({
-  owner: one(users, {
-    fields: [files.ownerId],
-    references: [users.id],
-  }),
-}));
 
 export const uploadRequests = pgTable(
   "upload_requests",
@@ -81,9 +69,48 @@ export const uploadRequests = pgTable(
   ],
 );
 
-export const uploadRequestsRelations = relations(uploadRequests, ({ one }) => ({
+export const sessions = pgTable(
+  "sessions",
+  {
+    id: varchar({ length: MaxIDLength })
+      .primaryKey()
+      .$defaultFn(() => createRandomId()),
+    userId: varchar({ length: MaxIDLength })
+      .notNull()
+      .references(() => users.id, {
+        onDelete: "cascade",
+      }),
+    refreshTokenId: varchar({ length: MaxIDLength }).notNull(),
+  },
+  (table) => [index("refresh_token_id_idx").on(table.refreshTokenId)],
+);
+
+export const usersRelation = drizzleRelation(users, ({ many }) => ({
+  files: many(files),
+  uploadRequests: many(uploadRequests),
+  sessions: many(sessions),
+}));
+
+export const filesRelation = drizzleRelation(files, ({ one }) => ({
+  owner: one(users, {
+    fields: [files.ownerId],
+    references: [users.id],
+  }),
+}));
+
+export const uploadRequestsRelation = drizzleRelation(
+  uploadRequests,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [uploadRequests.userId],
+      references: [users.id],
+    }),
+  }),
+);
+
+export const sessionsRelation = drizzleRelation(sessions, ({ one }) => ({
   user: one(users, {
-    fields: [uploadRequests.userId],
+    fields: [sessions.userId],
     references: [users.id],
   }),
 }));

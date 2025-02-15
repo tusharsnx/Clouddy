@@ -3,12 +3,15 @@
   "version": "1.0.0",
   "description": "",
   "type": "module",
+  "imports": {
+    "#/*": "./*"
+  },
   "scripts": {
     "start": "tsx index.ts",
     "dev": "tsx --watch index.ts",
     "lint": "tsc --noEmit",
-    "drizzle:ui": "drizzle-kit studio",
-    "drizzle:push": "drizzle-kit push",
+    "db:ui": "drizzle-kit studio",
+    "db:push": "drizzle-kit push",
     "tool:oauth": "npx http-serve -p 5500 ./tools/oauth-client"
   },
   "keywords": [],
@@ -26,7 +29,7 @@
     "drizzle-zod": "^0.6.1",
     "express": "^4.21.2",
     "http-status-codes": "^2.3.0",
-    "jsonwebtoken": "^9.0.2",
+    "jose": "^5.9.6",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "typescript": "5.7.2",

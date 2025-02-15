@@ -1,15 +1,15 @@
 import { Writable } from "node:stream";
 import { Router } from "express";
 import { StatusCodes } from "http-status-codes";
+import { UpdateFileSchema, UploadDataSchema } from "#/routes/models.ts";
 import {
   assertNotUndefined,
   assertTrue,
-} from "../services/application-error-service/helpers.ts";
-import { FileService } from "../services/file-service.ts";
-import { authenticate } from "../services/session.ts";
-import { createSafeHandler } from "../utils/create-handler.ts";
-import { validate } from "../utils/validators.ts";
-import { UpdateFileModel, UploadDataModel } from "./models.ts";
+} from "#/services/application-error-service/helpers.ts";
+import { FileService } from "#/services/file-service.ts";
+import { authenticate } from "#/services/session/middleware.ts";
+import { createSafeHandler } from "#/utils/create-handler.ts";
+import { validate } from "#/utils/validators.ts";
 
 const router = Router();
 export const filesRouter = router;
@@ -17,12 +17,12 @@ export const filesRouter = router;
 router.get(
   "/upload",
   createSafeHandler(async (req, resp) => {
-    const uploadData = validate(UploadDataModel, req.body);
+    const uploadData = validate(UploadDataSchema, req.body);
 
-    const user = await authenticate(req);
+    const session = await authenticate(req, resp);
 
     const { uploadId: upload_id, signedUrl: signed_url } =
-      await FileService.getSignedUploadUrl(user, uploadData);
+      await FileService.getSignedUploadUrl(session.user, uploadData);
     resp.status(StatusCodes.OK).json({ upload_id, signed_url });
   }),
 );
@@ -33,12 +33,12 @@ router.post(
     const uploadId = req.params.id;
     assertNotUndefined(uploadId, "BadRequest", "Invalid upload id.");
 
-    const user = await authenticate(req);
+    const session = await authenticate(req, resp);
     const uploadReq = await FileService.getUploadRequestById(uploadId);
 
     // Make sure the user is authorized
     assertTrue(
-      user.id === uploadReq.userId,
+      session.user.id === uploadReq.userId,
       "Unauthorized",
       "You are not authorized to access this file.",
     );
@@ -54,12 +54,12 @@ router.get(
     const fileId = req.params.id;
     assertNotUndefined(fileId, "BadRequest", "Invalid file id.");
 
-    const user = await authenticate(req);
+    const session = await authenticate(req, resp);
     const file = await FileService.getFileById(fileId);
 
     // Make sure the user is the owner of the file
     assertTrue(
-      user.id === file.ownerId,
+      session.user.id === file.ownerId,
       "Unauthorized",
       "You are not authorized to access this file.",
     );
@@ -74,17 +74,17 @@ router.put(
     const fileId = req.params.id;
     assertNotUndefined(fileId, "BadRequest", "Invalid file id.");
 
-    const user = await authenticate(req);
+    const session = await authenticate(req, resp);
     const file = await FileService.getFileById(fileId);
 
     // Make sure the user is the owner of the file
     assertTrue(
-      user.id === file.ownerId,
+      session.user.id === file.ownerId,
       "Unauthorized",
       "You are not authorized to access this file.",
     );
 
-    const updateData = validate(UpdateFileModel, req.body);
+    const updateData = validate(UpdateFileSchema, req.body);
     const updatedFile = await FileService.updateFile(fileId, updateData);
     resp.status(StatusCodes.OK).json({ file: updatedFile });
   }),
@@ -96,12 +96,12 @@ router.get(
     const fileId = req.params.id;
     assertNotUndefined(fileId, "BadRequest", "Invalid file id.");
 
-    const user = await authenticate(req);
+    const session = await authenticate(req, resp);
     const file = await FileService.getFileById(fileId);
 
     // Make sure the user is the owner of the file
     assertTrue(
-      user.id === file.ownerId,
+      session.user.id === file.ownerId,
       "Unauthorized",
       "You are not authorized to access this file.",
     );

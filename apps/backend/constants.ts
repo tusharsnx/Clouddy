@@ -2,7 +2,6 @@ import { envs } from "./envs.ts";
 
 export const isDev = envs.NODE_ENV === "development";
 export const MaxIDLength = 1024;
-export const TokenName = isDev ? "SID" : "_Secure-SID";
 
 export const UploadRequestMaxAgeSecs = 60; // 1 Min
 export const MaxUsageLimitBytes = 10 * 1024 * 1024; // 10 MB

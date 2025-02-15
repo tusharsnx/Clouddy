@@ -2,11 +2,11 @@ import bodyParser from "body-parser";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import express from "express";
-import { authRouter } from "./routes/auth.ts";
-import { filesRouter } from "./routes/files.ts";
-import { usersRouter } from "./routes/users.ts";
-import { ApplicationErrorServiceMiddleware } from "./services/application-error-service/middleware.ts";
-import { LoggingMiddlware } from "./services/logging-service/middleware.ts";
+import { authRouter } from "#/routes/auth.ts";
+import { filesRouter } from "#/routes/files.ts";
+import { usersRouter } from "#/routes/users.ts";
+import { ApplicationErrorServiceMiddleware } from "#/services/application-error-service/middleware.ts";
+import { LoggingMiddlware } from "#/services/logging-service/middleware.ts";
 
 const app = express();
 

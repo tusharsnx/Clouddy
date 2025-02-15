@@ -2,10 +2,9 @@ import { StatusCodes } from "http-status-codes";
 import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { z } from "zod";
-import { TokenName } from "../constants.ts";
-import { envs } from "../envs.ts";
-import { getCookieOptions, getToken } from "./session.ts";
-import { UserService } from "./user-service.ts";
+import { envs } from "#/envs.ts";
+import { login } from "#/services/session/middleware.ts";
+import { UserService } from "#/services/user-service.ts";
 
 const GoogleProfileSchema = z
   .object({
@@ -41,7 +40,9 @@ function setupProviders() {
       }
 
       const user = await UserService.getOrCreateUser(result.data);
-      resp.cookie(TokenName, await getToken(user), getCookieOptions());
+
+      await login(user.id, req, resp);
+
       resp.status(StatusCodes.OK).send({ user: user });
     },
   );

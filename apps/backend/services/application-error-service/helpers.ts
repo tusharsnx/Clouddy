@@ -1,4 +1,7 @@
-import { ApplicationError, type ApplicationErrorType } from "./types.ts";
+import {
+  ApplicationError,
+  type ApplicationErrorType,
+} from "#/services/application-error-service/types.ts";
 
 export function assertNotUndefined<T>(
   value: unknown,

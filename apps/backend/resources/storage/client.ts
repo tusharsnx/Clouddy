@@ -9,9 +9,9 @@ import {
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { z } from "zod";
-import { UploadRequestMaxAgeSecs } from "../../constants.ts";
-import { envs } from "../../envs.ts";
-import { TaskExecutor } from "../../task-executor.ts";
+import { UploadRequestMaxAgeSecs } from "#/constants.ts";
+import { envs } from "#/envs.ts";
+import { TaskExecutor } from "#/task-executor.ts";
 
 const s3Client = new S3Client({
   region: "auto",

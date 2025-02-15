@@ -1,23 +1,23 @@
 import * as d from "drizzle-orm";
-import { MimeTypes } from "../constants.ts";
-import { DBClient } from "../resources/db/client.ts";
-import { keyAlreadyExists } from "../resources/db/error-handlers.ts";
-import { files, uploadRequests, users } from "../resources/db/schemas.ts";
-import { StorageClient } from "../resources/storage/client.ts";
+import { MimeTypes } from "#/constants.ts";
+import { db } from "#/resources/db/client.ts";
+import { keyAlreadyExists } from "#/resources/db/error-handlers.ts";
+import { tables } from "#/resources/db/tables.ts";
+import { StorageClient } from "#/resources/storage/client.ts";
 import type {
-  FileModel,
-  UpdateFileModel,
-  UploadDataModel,
-  UploadRequestModel,
-  UserModel,
-} from "../routes/models.ts";
-import { TaskExecutor } from "../task-executor.ts";
+  File,
+  UpdateFile,
+  UploadData,
+  UploadRequest,
+  User,
+} from "#/routes/models.ts";
 import {
   assertNotUndefined,
   assertTrue,
   canRetry,
-} from "./application-error-service/helpers.ts";
-import { ApplicationError } from "./application-error-service/types.ts";
+} from "#/services/application-error-service/helpers.ts";
+import { ApplicationError } from "#/services/application-error-service/types.ts";
+import { TaskExecutor } from "#/task-executor.ts";
 
 const executor = new TaskExecutor({
   failFast: (e) => {
@@ -39,19 +39,20 @@ function getUploadKey(fileId: string) {
 export const FileService = {
   async getFileById(fileId: string) {
     const file = await executor.execute(() =>
-      DBClient.query.files.findFirst({
-        where: d.eq(files.id, fileId),
+      db.query.files.findFirst({
+        where: d.eq(tables.files.id, fileId),
       }),
     );
     assertNotUndefined(file, "NotFound", "File not found.");
     return file;
   },
 
-  async updateFile(id: string, data: UpdateFileModel) {
+  async updateFile(id: string, data: UpdateFile) {
     return await executor.execute(async () => {
-      const insertedFiles = await DBClient.update(files)
+      const insertedFiles = await db
+        .update(tables.files)
         .set(data)
-        .where(d.eq(files.id, id))
+        .where(d.eq(tables.files.id, id))
         .returning();
       const file = insertedFiles[0];
       assertNotUndefined(file, "OperationFailed", "Could not save the file.");
@@ -59,7 +60,7 @@ export const FileService = {
     });
   },
 
-  async getFileDownloadStream(file: FileModel) {
+  async getFileDownloadStream(file: File) {
     const key = getObjectKey(file.ownerId, file.id);
     const stream = await executor.execute(() =>
       StorageClient.getFileStream(key),
@@ -70,21 +71,21 @@ export const FileService = {
 
   async getUploadRequestById(uploadId: string) {
     const uploadReq = await executor.execute(() =>
-      DBClient.query.uploadRequests.findFirst({
-        where: d.eq(uploadRequests.id, uploadId),
+      db.query.uploadRequests.findFirst({
+        where: d.eq(tables.uploadRequests.id, uploadId),
       }),
     );
     assertNotUndefined(uploadReq, "NotFound", "Upload request not found.");
     return uploadReq;
   },
 
-  async saveUploadedFile(uploadReq: UploadRequestModel) {
+  async saveUploadedFile(uploadReq: UploadRequest) {
     const {
       success,
       result: newFile,
       error,
     } = await executor.executeSafe(() =>
-      DBClient.transaction(async (tx) => {
+      db.transaction(async (tx) => {
         // Check to see if the file actually exists in the
         // upload directory
         const uploadKey = getUploadKey(uploadReq.fileId);
@@ -92,10 +93,10 @@ export const FileService = {
 
         // todo: File may already exist in the db
         // Insert file into db
-        let insertedFiles: FileModel[];
+        let insertedFiles: File[];
         try {
           insertedFiles = await tx
-            .insert(files)
+            .insert(tables.files)
             .values([
               {
                 id: uploadReq.fileId,
@@ -123,11 +124,11 @@ export const FileService = {
 
         // Update user quota
         await tx
-          .update(users)
+          .update(tables.users)
           .set({
-            quotaRemaining: d.sql<number>`${users.quotaRemaining} - ${uploadReq.size}`,
+            quotaRemaining: d.sql<number>`${tables.users.quotaRemaining} - ${uploadReq.size}`,
           })
-          .where(d.eq(users.id, uploadReq.userId));
+          .where(d.eq(tables.users.id, uploadReq.userId));
 
         // Move file to user's directory
         const userObjectKey = getObjectKey(uploadReq.userId, uploadReq.fileId);
@@ -141,7 +142,7 @@ export const FileService = {
     return newFile;
   },
 
-  async getSignedUploadUrl(user: UserModel, uploadData: UploadDataModel) {
+  async getSignedUploadUrl(user: User, uploadData: UploadData) {
     // Ensure user has enough free quota for the upload
     assertTrue(
       user.quotaRemaining >= uploadData.size,
@@ -158,12 +159,12 @@ export const FileService = {
 
     // Get an upload request in a transaction
     return await executor.execute(() =>
-      DBClient.transaction(async (tx) => {
+      db.transaction(async (tx) => {
         const userUploadRequests = await tx.query.uploadRequests.findMany({
           where: d.and(
-            d.eq(uploadRequests.userId, user.id),
+            d.eq(tables.uploadRequests.userId, user.id),
             // Only get the upload requests that are still active
-            d.gt(uploadRequests.expires, new Date()),
+            d.gt(tables.uploadRequests.expires, new Date()),
           ),
         });
 
@@ -182,7 +183,7 @@ export const FileService = {
 
         // Insert new upload request
         const insertedUploadRequests = await tx
-          .insert(uploadRequests)
+          .insert(tables.uploadRequests)
           .values([
             {
               userId: user.id,
@@ -217,10 +218,10 @@ export const FileService = {
     );
   },
 
-  async getFilesByUser(user: UserModel) {
+  async getFilesByUser(user: User) {
     return await executor.execute(() =>
-      DBClient.query.files.findMany({
-        where: d.eq(files.ownerId, user.id),
+      db.query.files.findMany({
+        where: d.eq(tables.files.ownerId, user.id),
       }),
     );
   },
