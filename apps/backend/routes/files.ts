@@ -17,12 +17,12 @@ export const filesRouter = router;
 router.get(
   "/upload",
   createSafeHandler(async (req, resp) => {
-    const uploadData = validate(UploadDataSchema, req.body);
+    const { body: uploadDataBody } = validate(req, { body: UploadDataSchema });
 
     const session = await authenticate(req, resp);
 
     const { uploadId: upload_id, signedUrl: signed_url } =
-      await FileService.getSignedUploadUrl(session.user, uploadData);
+      await FileService.getSignedUploadUrl(session.user, uploadDataBody);
     resp.status(StatusCodes.OK).json({ upload_id, signed_url });
   }),
 );
@@ -84,8 +84,8 @@ router.put(
       "You are not authorized to access this file.",
     );
 
-    const updateData = validate(UpdateFileSchema, req.body);
-    const updatedFile = await FileService.updateFile(fileId, updateData);
+    const { body: updateDataBody } = validate(req, { body: UpdateFileSchema });
+    const updatedFile = await FileService.updateFile(fileId, updateDataBody);
     resp.status(StatusCodes.OK).json({ file: updatedFile });
   }),
 );

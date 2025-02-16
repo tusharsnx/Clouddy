@@ -28,9 +28,9 @@ router.put(
       "The id did not match the authenticated user id",
     );
 
-    // validate data and update user
-    const userData = validate(UpdateUserSchema, req.body);
-    const updatedUser = await UserService.updateUser(userId, userData);
+    // Update user
+    const { body: updateUserBody } = validate(req, { body: UpdateUserSchema });
+    const updatedUser = await UserService.updateUser(userId, updateUserBody);
     resp.status(StatusCodes.OK).send({ user: updatedUser });
   }),
 );
