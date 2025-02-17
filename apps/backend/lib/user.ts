@@ -1,16 +1,16 @@
 import * as d from "drizzle-orm";
 import { MaxUsageLimitBytes } from "#/constants.ts";
+import {
+  ApplicationError,
+  assertNotUndefined,
+  canRetry,
+} from "#/lib/app-error.ts";
 import { db } from "#/resources/db/client.ts";
 import { tables } from "#/resources/db/tables.ts";
 import { StorageClient } from "#/resources/storage/client.ts";
 import type { CreateUser, UpdateUser } from "#/routes/models.ts";
 import { TaskExecutor } from "#/task-executor.ts";
 import { createRandomId } from "#/utils/misc.ts";
-import {
-  assertNotUndefined,
-  canRetry,
-} from "./application-error-service/helpers.ts";
-import { ApplicationError } from "./application-error-service/types.ts";
 
 const executor = new TaskExecutor({
   failFast: (e) => {

@@ -1,11 +1,10 @@
 import type { CookieOptions, Request, Response } from "express";
 import { isDev } from "#/constants.ts";
-import type { User } from "#/routes/models.ts";
 import {
+  ApplicationError,
   assertNotUndefined,
   assertTrue,
-} from "#/services/application-error-service/helpers.ts";
-import { ApplicationError } from "#/services/application-error-service/types.ts";
+} from "#/lib/app-error.ts";
 import {
   type TokenPayload,
   createToken,
@@ -14,8 +13,9 @@ import {
   saveSession,
   updateSession,
   verifyToken,
-} from "#/services/session/core.ts";
-import { UserService } from "#/services/user-service.ts";
+} from "#/lib/session.ts";
+import { UserService } from "#/lib/user.ts";
+import type { User } from "#/routes/models.ts";
 import { createRandomId } from "#/utils/misc.ts";
 
 const AccessTokenName = "access_token";

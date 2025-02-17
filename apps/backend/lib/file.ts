@@ -1,5 +1,7 @@
 import * as d from "drizzle-orm";
 import { MimeTypes } from "#/constants.ts";
+import { assertNotUndefined, assertTrue, canRetry } from "#/lib/app-error.ts";
+import { ApplicationError } from "#/lib/app-error.ts";
 import { db } from "#/resources/db/client.ts";
 import { keyAlreadyExists } from "#/resources/db/error-handlers.ts";
 import { tables } from "#/resources/db/tables.ts";
@@ -11,12 +13,6 @@ import type {
   UploadRequest,
   User,
 } from "#/routes/models.ts";
-import {
-  assertNotUndefined,
-  assertTrue,
-  canRetry,
-} from "#/services/application-error-service/helpers.ts";
-import { ApplicationError } from "#/services/application-error-service/types.ts";
 import { TaskExecutor } from "#/task-executor.ts";
 
 const executor = new TaskExecutor({

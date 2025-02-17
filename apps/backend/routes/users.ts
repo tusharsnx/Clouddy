@@ -1,15 +1,12 @@
 import { Router } from "express";
 import { StatusCodes } from "http-status-codes";
+import { assertNotUndefined, assertTrue } from "#/lib/app-error.ts";
+import { authenticate } from "#/lib/auth.ts";
+import { createSafeHandler } from "#/lib/create-handler.ts";
+import { FileService } from "#/lib/file.ts";
+import { UserService } from "#/lib/user.ts";
+import { validate } from "#/lib/validator.ts";
 import { UpdateUserSchema } from "#/routes/models.ts";
-import {
-  assertNotUndefined,
-  assertTrue,
-} from "#/services/application-error-service/helpers.ts";
-import { FileService } from "#/services/file-service.ts";
-import { authenticate } from "#/services/session/middleware.ts";
-import { UserService } from "#/services/user-service.ts";
-import { createSafeHandler } from "#/utils/create-handler.ts";
-import { validate } from "#/utils/validators.ts";
 
 const router = Router();
 export const usersRouter = router;

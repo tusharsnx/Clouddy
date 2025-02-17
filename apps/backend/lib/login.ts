@@ -3,8 +3,8 @@ import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { z } from "zod";
 import { envs } from "#/envs.ts";
-import { login } from "#/services/session/middleware.ts";
-import { UserService } from "#/services/user-service.ts";
+import { login } from "#/lib/auth.ts";
+import { UserService } from "#/lib/user.ts";
 
 const GoogleProfileSchema = z
   .object({

@@ -1,8 +1,8 @@
 import type { NextFunction, Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
 import { z } from "zod";
-import { getZodErrorMessage } from "../../utils/zod-message.ts";
-import { ApplicationError } from "./types.ts";
+import { ApplicationError } from "#/lib/app-error.ts";
+import { getZodErrorMessage } from "#/utils/zod-message.ts";
 
 type ErrorResponsePayload = {
   message: string;

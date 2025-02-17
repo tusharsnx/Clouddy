@@ -2,16 +2,16 @@ import { Router } from "express";
 import { StatusCodes } from "http-status-codes";
 import passport from "passport";
 import { isDev } from "#/constants.ts";
-import type { CreateUser } from "#/routes/models.ts";
 import {
+  ApplicationError,
   assertNotUndefined,
   assertTrue,
-} from "#/services/application-error-service/helpers.ts";
-import { ApplicationError } from "#/services/application-error-service/types.ts";
-import { initLoginProviders } from "#/services/login.ts";
-import { authenticate, login, logout } from "#/services/session/middleware.ts";
-import { UserService } from "#/services/user-service.ts";
-import { createSafeHandler } from "#/utils/create-handler.ts";
+} from "#/lib/app-error.ts";
+import { authenticate, login, logout } from "#/lib/auth.ts";
+import { createSafeHandler } from "#/lib/create-handler.ts";
+import { initLoginProviders } from "#/lib/login.ts";
+import { UserService } from "#/lib/user.ts";
+import type { CreateUser } from "#/routes/models.ts";
 
 const router = Router();
 
