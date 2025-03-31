@@ -7,6 +7,7 @@ export const getQueryClient = cache(
       defaultOptions: {
         queries: {
           staleTime: Number.POSITIVE_INFINITY,
+          experimental_prefetchInRender: true,
         },
       },
     }),

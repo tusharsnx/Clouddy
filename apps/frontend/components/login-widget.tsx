@@ -1,5 +1,3 @@
-"use client";
-
 import { Button } from "#/components/ui/button";
 import {
   Card,
@@ -25,11 +23,7 @@ export default function LoginWidget({ onLogin }: Props) {
         <CardDescription>Sign in to continue</CardDescription>
       </CardHeader>
       <CardContent className="flex gap-2">
-        <Button
-          className="font-semibold"
-          id="login-btn"
-          onClick={() => onLogin("google")}
-        >
+        <Button id="login-btn" onClick={() => onLogin("google")}>
           Login with Google
         </Button>
       </CardContent>

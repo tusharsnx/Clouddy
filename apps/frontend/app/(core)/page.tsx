@@ -1,10 +1,11 @@
 "use client";
 
-import { useSessionLogout } from "#/components/session-provider";
-import { Button } from "#/components/ui/button";
+import { SearchBar } from "#/components/search-bar";
 
 export default function Home() {
-  const session = useSessionLogout();
-
-  return <Button onClick={() => session.logout()}>Logout</Button>;
+  return (
+    <div>
+      <SearchBar />
+    </div>
+  );
 }

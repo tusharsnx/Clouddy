@@ -37,6 +37,6 @@ app.use("/files", filesRouter);
 // Error handler
 app.use(ApplicationErrorServiceMiddleware);
 
-app.listen(3500, () => {
+app.listen(3500, "0.0.0.0", () => {
   console.log("Server is running on port 3500");
 });

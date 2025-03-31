@@ -1,10 +1,9 @@
 "use client";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { redirect } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { createContext, use } from "react";
 import * as session from "#/lib/session";
-import { Loader } from "./ui/loader";
 
 type SessionContext =
   | {
@@ -23,6 +22,7 @@ const SessionContext = createContext<SessionContext | null>(null);
 
 export function SessionProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   async function login(provider: string) {
     session.login(provider);
@@ -32,7 +32,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     const result = await session.logout();
     if (!result) return;
     await queryClient.refetchQueries({ queryKey: ["session"] });
-    redirect("/login");
+    router.push("/login");
   }
 
   function getSessionContext(user?: session.User) {
@@ -71,11 +71,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     queryFn: loadSession,
   });
 
-  if (query.fetchStatus === "fetching" || query.data === undefined) {
-    return <Loader />;
-  }
-
-  return <SessionContext value={query.data}>{children}</SessionContext>;
+  return <SessionContext value={use(query.promise)}>{children}</SessionContext>;
 }
 
 export function useSession() {
@@ -106,7 +102,7 @@ export function useSessionLogout() {
     throw Error("useSessionLogout must be used within a SessionProvider");
   }
   if (context.status !== "logged-in") {
-    throw Error("useSessionLogout can only be used when user is not logged in");
+    throw Error("useSessionLogout is only available when user is loged in");
   }
 
   return context;

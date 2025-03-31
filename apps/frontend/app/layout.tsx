@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { Inter } from "next/font/google";
+import { Roboto } from "next/font/google";
+import { ClientOnly } from "#/components/client-only";
 import Providers from "#/components/providers";
 
-const inter = Inter({
-  variable: "--font-sans",
+const font = Roboto({
+  weight: ["300", "400", "500", "700"],
   subsets: ["latin"],
 });
 
@@ -21,10 +22,15 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${inter.variable} antialiased dark`}
+        className={`${font.className} antialiased dark`}
+        // <body> seems to be used as a state manager by some
+        // extensions. This causes a lot of hydration warnings.
+        // Suppress hydration warning on <body>.
         suppressHydrationWarning
       >
-        <Providers>{children}</Providers>
+        <ClientOnly>
+          <Providers>{children}</Providers>
+        </ClientOnly>
       </body>
     </html>
   );

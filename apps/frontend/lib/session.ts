@@ -6,8 +6,8 @@ const UserSchema = z.object({
   name: z.string().nonempty(),
   email: z.string().nonempty(),
   picture: z.string().nonempty(),
-  quotaRemaining: z.number()
-})
+  quotaRemaining: z.number(),
+});
 
 export type User = z.infer<typeof UserSchema>;
 
@@ -19,9 +19,12 @@ export async function isLoggedIn() {
 }
 
 export async function exchange(provider: string, params: string) {
-  const resp = await fetch(getApiURL(`/auth/login/${provider}/callback?${params}`), {
-    credentials: "include"
-  });
+  const resp = await fetch(
+    getApiURL(`/auth/login/${provider}/callback?${params}`),
+    {
+      credentials: "include",
+    },
+  );
   if (!resp.ok) {
     return undefined;
   }
@@ -36,6 +39,7 @@ export function login(provider: string) {
 
 export async function logout() {
   const resp = await fetch(getApiURL("/auth/logout"), {
+    method: "post",
     credentials: "include",
   });
   return resp.ok;

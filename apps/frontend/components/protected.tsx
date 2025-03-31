@@ -31,7 +31,8 @@ export default function Protected({ children }: PropsWithChildren) {
     }
   }, [router, session, isOAuthCallback]);
 
-  if (session.status !== "logged-in") {
+  const isLoggedIn = session.status === "logged-in";
+  if (!isLoggedIn) {
     return <Loader />;
   }
 

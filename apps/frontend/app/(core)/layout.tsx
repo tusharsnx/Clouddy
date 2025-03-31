@@ -1,12 +1,15 @@
 import type { PropsWithChildren } from "react";
-import { NextClientSuspense } from "#/components/next-client-suspense";
 import Protected from "#/components/protected";
-import { Loader } from "#/components/ui/loader";
+import { TopNav } from "#/components/top-nav";
 
 export default function Layout({ children }: PropsWithChildren) {
   return (
-    <NextClientSuspense fallback={<Loader />}>
-      <Protected>{children}</Protected>
-    </NextClientSuspense>
+    <Protected>
+      <header className="px-4">
+        <TopNav />
+      </header>
+      <main className="px-4">{children}</main>
+      <footer className="px-4" />
+    </Protected>
   );
 }

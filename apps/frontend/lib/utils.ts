@@ -1,9 +1,8 @@
 import { type ClassValue, clsx } from "clsx";
-import { use } from "react";
 import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+  return twMerge(clsx(inputs));
 }
 
 export function getURL(path: string) {
@@ -11,15 +10,7 @@ export function getURL(path: string) {
 }
 
 export function getApiURL(path: string) {
-  return `${process.env.NEXT_PUBLIC_BE}${path}`;
-}
-
-
-export function createNeverResolvingPromise<T>() {
-  return new Promise<T>(() => { })
-};
-
-export function suspend(): never {
-  use(createNeverResolvingPromise());
-  throw new Error("This error is not expected. There is a bug in suspend().");
+  const host = process.env.NEXT_PUBLIC_API_HOST;
+  const port = process.env.NEXT_PUBLIC_API_PORT;
+  return `${host}${port ? `:${port}` : ""}${path}`;
 }
