@@ -32,13 +32,6 @@ import {
   getTextContentRangeSelection,
 } from "#/components/ui/structured-input/selection";
 
-type ArrowKeyKind = "ArrowLeft" | "ArrowRight";
-
-// Todos:
-// ctrl+backspace
-// selection + backspace/delete
-// Delete the entire file node when tag text is empty
-
 type SelectionEvent = {
   granularity: "character" | "word";
   isBackward: boolean;
@@ -46,7 +39,6 @@ type SelectionEvent = {
 
 export default function BoxNodePlugin(): JSX.Element | null {
   const [editor] = useLexicalComposerContext();
-  // const selectionKeyRef = useRef<ArrowKeyKind | null>({});
   const selectionEventRef = useRef<SelectionEvent | null>(null);
 
   const setSelectionEvent = (
@@ -159,79 +151,83 @@ export default function BoxNodePlugin(): JSX.Element | null {
     }
   }
 
-  useEffect(() => {
-    if (!editor.hasNodes([BoxNode])) {
-      throw new Error("BoxNode: BoxNode is not registered in the editor");
-    }
+  useEffect(
+    () => {
+      if (!editor.hasNodes([BoxNode])) {
+        throw new Error("BoxNode: BoxNode is not registered in the editor");
+      }
 
-    // Todo: Interesting commands left to be considered:
-    // - Select word/line
-    // - CONTROLLED_TEXT_INSERTION_COMMAND
-    return mergeRegister(
-      editor.registerCommand(
-        SELECTION_CHANGE_COMMAND,
-        onSelectionChange,
-        COMMAND_PRIORITY_LOW,
-      ),
-      editor.registerCommand(
-        KEY_ARROW_LEFT_COMMAND,
-        () => {
-          setSelectionEvent("character", true);
-          return false;
-        },
-        COMMAND_PRIORITY_LOW,
-      ),
-      editor.registerCommand(
-        KEY_ARROW_RIGHT_COMMAND,
-        () => {
-          setSelectionEvent("character", false);
-          return false;
-        },
-        COMMAND_PRIORITY_LOW,
-      ),
-      editor.registerCommand(
-        INSERT_LINE_BREAK_COMMAND,
-        () => true, // no-op
-        COMMAND_PRIORITY_HIGH,
-      ),
-      editor.registerCommand(
-        COPY_COMMAND,
-        onCopyForPlainText,
-        COMMAND_PRIORITY_LOW,
-      ),
-      editor.registerCommand(
-        CUT_COMMAND,
-        onCutForPlainText,
-        COMMAND_PRIORITY_LOW,
-      ),
-      editor.registerCommand(
-        DELETE_CHARACTER_COMMAND,
-        onDeleteCharacter,
-        COMMAND_PRIORITY_LOW,
-      ),
-    );
-  }, [
-    editor,
-    onDeleteCharacter,
-    onSelectionChange,
-    setSelectionEvent,
-    onCopyForPlainText,
-    onCutForPlainText,
-  ]);
+      // Todo: Interesting commands left to be considered:
+      // - Select word/line
+      // - CONTROLLED_TEXT_INSERTION_COMMAND
+      return mergeRegister(
+        editor.registerCommand(
+          SELECTION_CHANGE_COMMAND,
+          onSelectionChange,
+          COMMAND_PRIORITY_LOW,
+        ),
+        editor.registerCommand(
+          KEY_ARROW_LEFT_COMMAND,
+          () => {
+            setSelectionEvent("character", true);
+            return false;
+          },
+          COMMAND_PRIORITY_LOW,
+        ),
+        editor.registerCommand(
+          KEY_ARROW_RIGHT_COMMAND,
+          () => {
+            setSelectionEvent("character", false);
+            return false;
+          },
+          COMMAND_PRIORITY_LOW,
+        ),
+        editor.registerCommand(
+          INSERT_LINE_BREAK_COMMAND,
+          // disable line breaks
+          () => true,
+          COMMAND_PRIORITY_HIGH,
+        ),
+        editor.registerCommand(
+          COPY_COMMAND,
+          onCopyForPlainText,
+          COMMAND_PRIORITY_LOW,
+        ),
+        editor.registerCommand(
+          CUT_COMMAND,
+          onCutForPlainText,
+          COMMAND_PRIORITY_LOW,
+        ),
+        editor.registerCommand(
+          DELETE_CHARACTER_COMMAND,
+          onDeleteCharacter,
+          COMMAND_PRIORITY_LOW,
+        ),
+      );
+    },
+    // biome-ignore format:
+    // biome-ignore lint/correctness/useExhaustiveDependencies:
+    [editor, onDeleteCharacter, onSelectionChange, setSelectionEvent, onCopyForPlainText, onCutForPlainText],
+  );
 
-  useEffect(() => {
-    const root = editor.getRootElement();
-    if (!root) {
-      return;
-    }
+  useEffect(
+    () => {
+      const root = editor.getRootElement();
+      if (!root) {
+        return;
+      }
 
-    root.addEventListener("pointerup", onPointerUp);
-    root.addEventListener("keydown", onKeyDown);
-    return () => {
-      root.removeEventListener("pointerup", onPointerUp);
-      root.removeEventListener("keydown", onKeyDown);
-    };
-  }, [editor, onPointerUp, onKeyDown]);
+      root.addEventListener("pointerup", onPointerUp);
+      root.addEventListener("keydown", onKeyDown);
+      return () => {
+        root.removeEventListener("pointerup", onPointerUp);
+        root.removeEventListener("keydown", onKeyDown);
+      };
+    },
+    // biome-ignore format:
+    // biome-ignore lint/correctness/useExhaustiveDependencies:
+    [editor, onPointerUp, onKeyDown],
+  );
 
   return null;
 }

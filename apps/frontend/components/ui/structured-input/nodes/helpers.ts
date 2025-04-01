@@ -1,4 +1,4 @@
-import { $getNodeByKey, type NodeKey } from "lexical";
+import { $getNodeByKey, type LexicalNode, type NodeKey } from "lexical";
 import {
   $isBoxNode,
   type BoxNode,
@@ -81,4 +81,27 @@ export function $getBoxGroupNodesByBoxKey(key: NodeKey): BoxGroupNode[] {
 
   // Always return the deepest children first
   return nodes.filter((node) => isBoxGroupNode(node)).reverse();
+}
+
+export function $insertAfterBox(
+  boxNode: BoxGroupNode,
+  newNode: LexicalNode,
+  restoreSelection?: boolean,
+) {
+  const boxKey = $getBoxKey(boxNode);
+  if (boxKey === undefined) {
+    throw new Error("Box key not found");
+  }
+
+  const rootNode = $getBoxRootNode(boxKey);
+  if (rootNode === null) {
+    throw new Error("Box root node not found");
+  }
+
+  return rootNode.insertAfter(newNode, restoreSelection);
+}
+
+export function $getBoxRootNode(boxNodeKey: NodeKey): BoxNode | null {
+  const node = $getNodeByKey(boxNodeKey);
+  return $isBoxNode(node) ? node : null;
 }

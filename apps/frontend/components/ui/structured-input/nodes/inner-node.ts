@@ -2,10 +2,12 @@ import {
   type EditorConfig,
   ElementNode,
   type LexicalEditor,
+  type LexicalNode,
   type NodeKey,
   type SerializedElementNode,
   type Spread,
 } from "lexical";
+import { $insertAfterBox } from "#/components/ui/structured-input/nodes/helpers";
 
 type SerializedBoxInnerNode = Spread<
   { className?: string },
@@ -51,6 +53,17 @@ export class BoxInnerNode extends ElementNode {
 
   isInline(): true {
     return true;
+  }
+
+  // When a controlled insertion happens on a BoxTextNode, the outside
+  // stuff is merged inside its parent, which is a BoxInnerNode. To preserve
+  // the BoxNode's structure, insert the new node after the BoxNode that
+  // contains this BoxInnerNode.
+  insertAfter(
+    nodeToInsert: LexicalNode,
+    restoreSelection?: boolean,
+  ): LexicalNode {
+    return $insertAfterBox(this, nodeToInsert, restoreSelection);
   }
 
   // Make this node unremoval

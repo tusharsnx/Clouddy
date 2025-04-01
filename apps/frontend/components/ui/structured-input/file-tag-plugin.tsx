@@ -89,9 +89,7 @@ function FileTagsMenu({
             setHighlightedIndex(i);
             selectOptionAndCleanUp(option);
           }}
-          onMouseEnter={() => {
-            setHighlightedIndex(i);
-          }}
+          onMouseEnter={() => setHighlightedIndex(i)}
           className={cn(
             "px-2 aria-selected:bg-gray-500",
             selectedIndex === i && "selected",
@@ -120,9 +118,8 @@ export default function FileTagPlugin(): JSX.Element | null {
     editor.update(() => {
       const boxNode = $createFileTagNode(selectedOption.key);
       nodeToReplace?.replace(boxNode);
-
-      // place the cursor after the space
-      boxNode.selectNext(0, 0);
+      // Place the caret after the new node
+      boxNode.selectEnd();
       closeMenu();
     });
   }
