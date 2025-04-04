@@ -1,15 +1,13 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
-  // We want our app to run without servers, which means we can't use
-  // any Dynamic Components in our app. Setting output to "export" will
-  // ensure that the app is built as a static site and throws if
-  // it can't.
+const nextConfig = {
+  // This is a client-only app. Only allow static or client-only
+  // components in the project.
   output: "export",
 
   experimental: {
     reactCompiler: true,
-  }
-};
+  },
+} satisfies NextConfig;
 
 export default nextConfig;
