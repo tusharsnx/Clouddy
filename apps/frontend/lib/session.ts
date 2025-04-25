@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { getApiURL } from "./utils";
 
 const UserSchema = z.object({
   id: z.string().nonempty(),
@@ -12,19 +11,12 @@ const UserSchema = z.object({
 export type User = z.infer<typeof UserSchema>;
 
 export async function isLoggedIn() {
-  const resp = await fetch(getApiURL("/auth/me"), {
-    credentials: "include",
-  });
+  const resp = await fetch("/api/auth/me");
   return resp.ok;
 }
 
 export async function exchange(provider: string, params: string) {
-  const resp = await fetch(
-    getApiURL(`/auth/login/${provider}/callback?${params}`),
-    {
-      credentials: "include",
-    },
-  );
+  const resp = await fetch(`/api/auth/login/${provider}/callback?${params}`);
   if (!resp.ok) {
     return undefined;
   }
@@ -34,21 +26,18 @@ export async function exchange(provider: string, params: string) {
 }
 
 export function login(provider: string) {
-  window.location.href = getApiURL(`/auth/login/${provider}`);
+  window.location.href = `/api/auth/login/${provider}`;
 }
 
 export async function logout() {
-  const resp = await fetch(getApiURL("/auth/logout"), {
+  const resp = await fetch("/api/auth/logout", {
     method: "post",
-    credentials: "include",
   });
   return resp.ok;
 }
 
 export async function getLoggedInUser() {
-  const resp = await fetch(getApiURL("/auth/me"), {
-    credentials: "include",
-  });
+  const resp = await fetch("/api/auth/me");
   const { data: user } = UserSchema.safeParse(await resp.json());
   return user;
 }

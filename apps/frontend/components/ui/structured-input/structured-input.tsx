@@ -12,12 +12,11 @@ import { $createParagraphNode, $getRoot, type LexicalNode } from "lexical";
 import { useEffect } from "react";
 import BoxNodePlugin from "#/components/ui/structured-input/box-node-plugin";
 import FileTagPlugin from "#/components/ui/structured-input/file-tag-plugin";
+import { BoxBoundaryNode } from "#/components/ui/structured-input/nodes/box-boundary-node";
+import { BoxContentNode } from "#/components/ui/structured-input/nodes/box-content-node";
 import { BoxNode } from "#/components/ui/structured-input/nodes/box-node";
+import { BoxTextNode } from "#/components/ui/structured-input/nodes/box-text-node";
 import { $createFileTagNode } from "#/components/ui/structured-input/nodes/file-tag-node";
-import { BoxInnerBoundaryNode } from "#/components/ui/structured-input/nodes/inner-boundary-node";
-import { BoxInnerNode } from "#/components/ui/structured-input/nodes/inner-node";
-import { BoxTextNode } from "#/components/ui/structured-input/nodes/inner-text-node";
-import { BoxOuterBoundaryNode } from "#/components/ui/structured-input/nodes/outer-boundary-node";
 import { theme } from "#/components/ui/structured-input/theme";
 import { cn } from "#/lib/utils";
 
@@ -40,13 +39,7 @@ export default function TreeViewPlugin() {
 
 const initialLexicalConfig: InitialConfigType = {
   theme,
-  nodes: [
-    BoxNode,
-    BoxOuterBoundaryNode,
-    BoxInnerNode,
-    BoxInnerBoundaryNode,
-    BoxTextNode,
-  ],
+  nodes: [BoxNode, BoxContentNode, BoxBoundaryNode, BoxTextNode],
   namespace: "structured-input",
   onError: (error) => {
     console.error(error);

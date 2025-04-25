@@ -8,6 +8,8 @@ import { authRouter } from "#/routes/auth.ts";
 import { filesRouter } from "#/routes/files.ts";
 import { usersRouter } from "#/routes/users.ts";
 
+const PORT = 4500;
+
 const app = express();
 
 // Disable x-powered-by header
@@ -37,6 +39,6 @@ app.use("/files", filesRouter);
 // Error handler
 app.use(ApplicationErrorServiceMiddleware);
 
-app.listen(3500, "0.0.0.0", () => {
-  console.log("Server is running on port 3500");
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server is running on port ${PORT}`);
 });

@@ -1,0 +1,7 @@
+{
+  "name": "dev-server",
+  "private": true,
+  "scripts": {
+    "dev": "caddy run --watch"
+  }
+}

@@ -3,10 +3,9 @@ import {
   ElementNode,
   type SerializedElementNode,
 } from "lexical";
-import { $createBoxInnerBoundaryNode } from "#/components/ui/structured-input/nodes/inner-boundary-node";
-import { $createBoxInnerNode } from "#/components/ui/structured-input/nodes/inner-node";
-import { $createBoxTextNode } from "#/components/ui/structured-input/nodes/inner-text-node";
-import { $createBoxOuterBoundaryNode } from "#/components/ui/structured-input/nodes/outer-boundary-node";
+import { $createBoxBoundaryNode } from "#/components/ui/structured-input/nodes/box-boundary-node";
+import { $createBoxContentNode } from "#/components/ui/structured-input/nodes/box-content-node";
+import { $createBoxTextNode } from "#/components/ui/structured-input/nodes/box-text-node";
 
 type SerializedBoxNode = SerializedElementNode;
 
@@ -14,10 +13,12 @@ type SerializedBoxNode = SerializedElementNode;
 export const ShowBoundaries = true;
 
 export class BoxNode extends ElementNode {
-  #type = "box-node";
+  static #type = "box";
 
   createDOM(): HTMLElement {
-    return document.createElement("span");
+    const dom = document.createElement("span");
+    dom.dataset.lexical = "box";
+    return dom;
   }
 
   updateDOM(
@@ -52,37 +53,33 @@ export class BoxNode extends ElementNode {
     return false;
   }
 
-  internalRemove(preserveEmptyParent?: boolean): void {
-    this.remove(preserveEmptyParent);
-  }
-
   static importJSON(serializedNode: SerializedBoxNode): BoxNode {
     return $createBoxNode().updateFromJSON(serializedNode);
   }
 
   static getType(): string {
-    return "box";
+    return BoxNode.#type;
   }
 
   static clone(node: BoxNode): BoxNode {
     return new BoxNode(node.__key);
   }
-
-  getBoxKey(): string {
-    return this.__key;
-  }
 }
 
 export function $createBoxGroup(text: string, className?: string): BoxNode {
   const boxNode = $createBoxNode();
-  const outerFrontBoundaryNode = $createBoxOuterBoundaryNode("front");
-  const outerBackBoundaryNode = $createBoxOuterBoundaryNode("back");
-  const innerBoundaryNode = $createBoxInnerBoundaryNode();
+  const outerBeforeBoundaryNode = $createBoxBoundaryNode("outer-before");
+  const outerAfterBoundaryNode = $createBoxBoundaryNode("outer-after");
+  const innerBoundaryNode = $createBoxBoundaryNode("inner");
   const textNode = $createBoxTextNode(text);
-  const boxInnerNode = $createBoxInnerNode(className);
+  const boxContentNode = $createBoxContentNode(className);
 
-  boxInnerNode.append(innerBoundaryNode, textNode);
-  boxNode.append(outerFrontBoundaryNode, boxInnerNode, outerBackBoundaryNode);
+  boxContentNode.append(innerBoundaryNode, textNode);
+  boxNode.append(
+    outerBeforeBoundaryNode,
+    boxContentNode,
+    outerAfterBoundaryNode,
+  );
 
   return boxNode;
 }

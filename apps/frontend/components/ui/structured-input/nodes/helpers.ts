@@ -1,107 +1,111 @@
-import { $getNodeByKey, type LexicalNode, type NodeKey } from "lexical";
+import { $findMatchingParent } from "@lexical/utils";
+import {
+  $getNodeByKey,
+  $setSelection,
+  type LexicalNode,
+  type NodeKey,
+  type PointType,
+  type RangeSelection,
+} from "lexical";
+import {
+  $isBoxBoundaryNode,
+  BoxBoundaryNode,
+} from "#/components/ui/structured-input/nodes/box-boundary-node";
+import {
+  $isBoxContentNode,
+  BoxContentNode,
+} from "#/components/ui/structured-input/nodes/box-content-node";
 import {
   $isBoxNode,
-  type BoxNode,
+  BoxNode,
 } from "#/components/ui/structured-input/nodes/box-node";
 import {
-  $isBoxInnerBoundaryNode,
-  type BoxInnerBoundaryNode,
-} from "#/components/ui/structured-input/nodes/inner-boundary-node";
-import {
-  $isBoxInnerNode,
-  type BoxInnerNode,
-} from "#/components/ui/structured-input/nodes/inner-node";
-import {
   $isBoxTextNode,
-  type BoxTextNode,
-} from "#/components/ui/structured-input/nodes/inner-text-node";
-import {
-  $isBoxOuterBoundaryNode,
-  type BoxOuterBoundaryNode,
-} from "#/components/ui/structured-input/nodes/outer-boundary-node";
-
-type BoxGroupNode =
-  | BoxNode
-  | BoxInnerNode
-  | BoxOuterBoundaryNode
-  | BoxInnerBoundaryNode
-  | BoxTextNode;
+  BoxTextNode,
+} from "#/components/ui/structured-input/nodes/box-text-node";
 
 /**
  * Returns the box key of the group this node belongs to.
  * A box key is shared by all the box nodes belonging to the group.
  */
-export function $getBoxKey(node: BoxGroupNode): string | undefined {
-  const boxNode = $isBoxNode(node)
-    ? node
-    : $isBoxOuterBoundaryNode(node) || $isBoxInnerNode(node)
-      ? node.getParent()
-      : $isBoxInnerBoundaryNode(node) || $isBoxTextNode(node)
-        ? node.getParent()?.getParent()
-        : undefined;
-
-  // The group id of a box node group is the key of parent BoxNode.
-  return $isBoxNode(boxNode) ? boxNode.getBoxKey() : undefined;
+export function $getBoxKey(node: LexicalNode): string | undefined {
+  return $getBoxRootByGroupNode(node)?.getKey();
 }
 
-export function isBoxGroupNode(node: unknown): node is BoxGroupNode {
+/**
+ * Returns the box root node of the group a given node belongs to.
+ * A box key is shared by all the box nodes belonging to the group.
+ */
+export function $getBoxRootByGroupNode(node: LexicalNode): BoxNode | null {
+  return $findMatchingParent(node, (node) => $isBoxNode(node));
+}
+
+export function $getBoxRootByBoxKey(boxNodeKey: NodeKey): BoxNode | null {
+  const node = $getNodeByKey(boxNodeKey);
+  return $isBoxNode(node) ? node : null;
+}
+
+export const BoxNodeTypes = [
+  BoxNode,
+  BoxContentNode,
+  BoxBoundaryNode,
+  BoxTextNode,
+] as const;
+
+export type BoxGroupNodes = (typeof BoxNodeTypes)[number];
+
+export function $isBoxGroupNode(node: unknown): node is BoxGroupNodes {
   return (
     $isBoxNode(node) ||
-    $isBoxInnerNode(node) ||
-    $isBoxOuterBoundaryNode(node) ||
-    $isBoxInnerBoundaryNode(node) ||
+    $isBoxContentNode(node) ||
+    $isBoxBoundaryNode(node) ||
     $isBoxTextNode(node)
   );
 }
 
-export function isBoxBoundaryNode(node: unknown) {
-  return $isBoxInnerBoundaryNode(node) || $isBoxOuterBoundaryNode(node);
-}
-
-export function $getBoxGroupNodesByBoxKey(key: NodeKey): BoxGroupNode[] {
-  const nodes: (unknown | null)[] = [];
-  const boxNode = $getNodeByKey(key);
-  if ($isBoxNode(boxNode)) {
-    const boxOuterBoundaryNodeFront = boxNode?.getFirstChild();
-    const boxOuterBoundaryNodeBack = boxNode?.getLastChild();
-    const boxInnerNode = boxOuterBoundaryNodeFront?.getNextSibling() ?? null;
-
-    nodes.push(
-      boxOuterBoundaryNodeFront,
-      boxOuterBoundaryNodeBack,
-      boxInnerNode,
-    );
-
-    if ($isBoxInnerNode(boxInnerNode)) {
-      const boxInnerBoundaryNode = boxInnerNode?.getFirstChild() ?? null;
-      const boxInnerTextNode = boxInnerBoundaryNode?.getNextSibling() ?? null;
-      nodes.push(boxInnerBoundaryNode, boxInnerTextNode);
-    }
-  }
-
-  // Always return the deepest children first
-  return nodes.filter((node) => isBoxGroupNode(node)).reverse();
-}
-
-export function $insertAfterBox(
-  boxNode: BoxGroupNode,
-  newNode: LexicalNode,
-  restoreSelection?: boolean,
+export function shouldSkipSelectionPoint(
+  point: PointType,
+  isRangeSelection: boolean,
 ) {
-  const boxKey = $getBoxKey(boxNode);
-  if (boxKey === undefined) {
-    throw new Error("Box key not found");
-  }
-
-  const rootNode = $getBoxRootNode(boxKey);
-  if (rootNode === null) {
-    throw new Error("Box root node not found");
-  }
-
-  return rootNode.insertAfter(newNode, restoreSelection);
+  return isRangeSelection
+    ? $isBoxBoundaryNode(point.getNode())
+    : !canPlaceCaretAtPoint(point);
 }
 
-export function $getBoxRootNode(boxNodeKey: NodeKey): BoxNode | null {
-  const node = $getNodeByKey(boxNodeKey);
-  return $isBoxNode(node) ? node : null;
+export function canPlaceCaretAtPoint(point: PointType) {
+  const node = point.getNode();
+  const { offset } = point;
+
+  return $isBoxBoundaryNode(node)
+    ? (offset === 0 && node.canPlaceCaretBefore()) ||
+        (offset === node.getTextContentSize() && node.canPlaceCaretAfter())
+    : true;
+}
+
+export function $getNextCharacterNode(
+  selection: RangeSelection,
+  isBackward: boolean,
+) {
+  // There can be many non-text nodes in-between current position and
+  // the next character. Getting the next character becomes tricky
+  // because there are no browser primitive to do that. However, we can
+  // ask the dom to select the character for us, and then read the node
+  // from the selection object.
+
+  // Save the current selection state to restore it later.
+  const lastSelection = selection.clone();
+
+  // Select a character.
+  // This might select "too" much in case of some unicode characters
+  // that needs to be deleted in parts, but box characters (e.g.
+  // \u200B) are always deleted as a single unit so it's fine.
+  selection.modify("extend", isBackward, "character");
+
+  // The next character belongs to the focus node.
+  const nextCharacterNode = selection.focus.getNode();
+
+  // Restore the last selection.
+  $setSelection(lastSelection);
+
+  return nextCharacterNode;
 }
