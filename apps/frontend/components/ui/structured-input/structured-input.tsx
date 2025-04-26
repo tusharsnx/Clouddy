@@ -20,23 +20,6 @@ import { $createFileTagNode } from "#/components/ui/structured-input/nodes/file-
 import { theme } from "#/components/ui/structured-input/theme";
 import { cn } from "#/lib/utils";
 
-export default function TreeViewPlugin() {
-  const [editor] = useLexicalComposerContext();
-  return (
-    <div>
-      <TreeView
-        viewClassName="absolute my-4 w-full text-[0.75rem] border-2 rounded-lg p-2 [&>pre]:border-2 [&>pre]:rounded-lg [&>pre]:p-2 [&>pre]:my-2 [&>pre]:bg-white/10"
-        treeTypeButtonClassName="me-2 px-2 py-1 border-2 rounded-lg"
-        timeTravelPanelClassName="p-2 border-2 rounded-lg flex items-center space-x-2"
-        timeTravelButtonClassName="px-2 py-1 border-2 rounded-lg"
-        timeTravelPanelSliderClassName=""
-        timeTravelPanelButtonClassName="px-2 py-1 border-2 rounded-lg"
-        editor={editor}
-      />
-    </div>
-  );
-}
-
 const initialLexicalConfig: InitialConfigType = {
   theme,
   nodes: [BoxNode, BoxContentNode, BoxBoundaryNode, BoxTextNode],
@@ -49,7 +32,7 @@ const initialLexicalConfig: InitialConfigType = {
 function LexicalContentEditable() {
   return (
     // These styles position <Placeholder> on top of <ContentEditable>
-    // to mimic an <input>)
+    // to mimic the look of '::placeholder' on input elements.
     <div className="grid [&>*]:row-start-1 [&>*]:col-start-1">
       <PlainTextPlugin
         contentEditable={<ContentEditable className="outline-none" />}
@@ -91,7 +74,15 @@ function LexicalPlugins() {
   return (
     <>
       <HistoryPlugin />
-      <TreeViewPlugin />
+      <TreeView
+        viewClassName="absolute my-4 w-full text-[0.75rem] border-2 rounded-lg p-2 [&>pre]:border-2 [&>pre]:rounded-lg [&>pre]:p-2 [&>pre]:my-2 [&>pre]:bg-white/10 [&>pre]:overflow-auto"
+        treeTypeButtonClassName="me-2 px-2 py-1 border-2 rounded-lg"
+        timeTravelPanelClassName="p-2 border-2 rounded-lg flex items-center space-x-2"
+        timeTravelButtonClassName="px-2 py-1 border-2 rounded-lg"
+        timeTravelPanelSliderClassName=""
+        timeTravelPanelButtonClassName="px-2 py-1 border-2 rounded-lg"
+        editor={editor}
+      />
       <BoxNodePlugin />
       <FileTagPlugin />
     </>
