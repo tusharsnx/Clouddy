@@ -1,77 +1,59 @@
 "use client";
 
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
+import { type User, login, logout } from "#/lib/session";
+
 import { createContext, use } from "react";
-import * as session from "#/lib/session";
+import { Loader } from "#/components/ui/loader";
+import {
+  useInvalidateSessionUserQuery,
+  useSessionUserQuery,
+} from "#/hooks/use-session-user-query";
 
 type SessionContext =
+  | { status: "pending"; user?: undefined }
   | {
       status: "logged-out";
       user: null;
-      login: (provider: string) => Promise<void>;
-      exchange: (provider: string) => Promise<void>;
+      login: (provider: string) => void;
     }
   | {
       status: "logged-in";
-      user: session.User;
-      logout: () => Promise<void>;
+      user: User;
+      logout: () => void;
     };
 
 const SessionContext = createContext<SessionContext | null>(null);
 
 export function SessionProvider({ children }: { children: React.ReactNode }) {
-  const queryClient = useQueryClient();
-  const router = useRouter();
+  const { data: user } = useSessionUserQuery();
+  const invalidateSessionUserQuery = useInvalidateSessionUserQuery();
 
-  async function login(provider: string) {
-    session.login(provider);
-  }
-
-  async function logout() {
-    const result = await session.logout();
-    if (!result) return;
-    await queryClient.refetchQueries({ queryKey: ["session"] });
-    router.push("/login");
-  }
-
-  function getSessionContext(user?: session.User) {
-    return (
-      user
+  const sessionCtx: SessionContext | null =
+    user === undefined
+      ? {
+          status: "pending",
+        }
+      : user == null
         ? {
-            status: "logged-in",
-            user,
-            logout,
-          }
-        : {
             status: "logged-out",
             user: null,
-            login,
-            exchange,
+            login: (provider) => login(provider),
           }
-    ) satisfies SessionContext;
-  }
+        : {
+            status: "logged-in",
+            user,
+            logout: async () => {
+              if (await logout()) {
+                await invalidateSessionUserQuery();
+              }
+            },
+          };
 
-  async function exchange(provider: string) {
-    // The code is in the URL search params
-    const searchParams = new URLSearchParams(window.location.search);
-    const user = await session.exchange(provider, searchParams.toString());
-    if (!user) return;
-    queryClient.setQueryData(["session"], getSessionContext(user));
-    window.history.replaceState(null, "", window.location.pathname);
-  }
-
-  async function loadSession() {
-    const user = await session.getLoggedInUser();
-    return getSessionContext(user);
-  }
-
-  const query = useQuery<SessionContext>({
-    queryKey: ["session"],
-    queryFn: loadSession,
-  });
-
-  return <SessionContext value={use(query.promise)}>{children}</SessionContext>;
+  return sessionCtx.status === "pending" ? (
+    <Loader />
+  ) : (
+    <SessionContext value={sessionCtx}>{children}</SessionContext>
+  );
 }
 
 export function useSession() {

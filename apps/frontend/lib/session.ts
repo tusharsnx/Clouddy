@@ -3,7 +3,7 @@ import { z } from "zod";
 const UserSchema = z.object({
   id: z.string().nonempty(),
   name: z.string().nonempty(),
-  email: z.string().nonempty(),
+  email: z.string().email(),
   picture: z.string().nonempty(),
   quotaRemaining: z.number(),
 });
@@ -15,13 +15,12 @@ export async function isLoggedIn() {
   return resp.ok;
 }
 
-export async function exchange(provider: string, params: string) {
+export async function exchange(
+  provider: string,
+  params: string,
+): Promise<User | null> {
   const resp = await fetch(`/api/auth/login/${provider}/callback?${params}`);
-  if (!resp.ok) {
-    return undefined;
-  }
-
-  const { data: user } = UserSchema.safeParse(await resp.json());
+  const { data: user = null } = UserSchema.safeParse(await resp.json());
   return user;
 }
 
@@ -36,8 +35,8 @@ export async function logout() {
   return resp.ok;
 }
 
-export async function getLoggedInUser() {
+export async function getUser(): Promise<User | null> {
   const resp = await fetch("/api/auth/me");
-  const { data: user } = UserSchema.safeParse(await resp.json());
+  const { data: user = null } = UserSchema.safeParse(await resp.json());
   return user;
 }

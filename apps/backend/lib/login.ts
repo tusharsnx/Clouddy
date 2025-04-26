@@ -43,7 +43,7 @@ function setupProviders() {
 
       await login(user.id, req, resp);
 
-      resp.status(StatusCodes.OK).send({ user: user });
+      resp.status(StatusCodes.OK).json(user);
     },
   );
 

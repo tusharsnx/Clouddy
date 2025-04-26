@@ -7,7 +7,7 @@ import {
   TextNode,
 } from "lexical";
 
-const ShowBoundary = true;
+const ShowBoundary = false;
 
 type BoxBoundaryType = "outer-before" | "outer-after" | "inner";
 type SerializedBoxBoundaryNode = Spread<

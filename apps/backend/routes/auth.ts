@@ -89,7 +89,7 @@ if (isDev) {
       const user = await UserService.getOrCreateUser(userData);
 
       await login(user.id, req, resp);
-      resp.status(StatusCodes.OK).json({ user });
+      resp.status(StatusCodes.OK).json(user);
     }),
   );
 }

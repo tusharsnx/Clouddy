@@ -10,19 +10,16 @@ export default function Page() {
   const session = useSession();
   const router = useRouter();
 
-  // Try to redirect the user if they're already logged in
   useEffect(() => {
-    if (session.status === "logged-out") return;
-    router.push("/");
+    // Redirect to '/' when the user is already logged-in.
+    if (session.status === "logged-in") {
+      router.push("/");
+    }
   }, [session, router]);
 
-  if (session.status === "logged-in") {
-    // The above use effect will redirect the user to the home page,
-    // but until then we'll show a loader.
-    return <Loader />;
-  }
-
-  return (
+  return session.status !== "logged-out" ? (
+    <Loader />
+  ) : (
     <div className="h-full flex justify-center items-center">
       <LoginWidget onLogin={session.login} />
     </div>
