@@ -5,8 +5,7 @@ import {
 } from "@lexical/clipboard";
 import { mergeRegister } from "@lexical/utils";
 import {
-  $handleKeySelectionOnBox,
-  $handlePointerSelectionOnBox,
+  $handleSelectionOnBox,
   $skipBoxNodesBeforeDeletion,
   getSelectionTextContent,
   getTextContentNodeSelection,
@@ -31,13 +30,13 @@ import { $getBoxRootByGroupNode } from "#/components/ui/structured-input/nodes/h
 
 type SelectionState = {
   granularity: "character" | "word";
-  isBackward: boolean;
+  isBackward?: boolean;
 };
 
 type BoxPluginState = {
-  getKeySelectionState: () => SelectionState | null;
-  setKeySelectionState: (state: SelectionState) => void;
-  clearKeySelectionState: () => void;
+  getSelectionState: () => SelectionState | null;
+  setSelectionState: (state: SelectionState) => void;
+  clearSelectionState: () => void;
 };
 
 export function registerBoxPluginHandlers(editor: LexicalEditor) {
@@ -61,15 +60,15 @@ function initPluginState(): BoxPluginState {
   let selectionState: SelectionState | null = null;
 
   return {
-    getKeySelectionState: () => {
+    getSelectionState: () => {
       const curr = selectionState;
       selectionState = null;
       return curr;
     },
-    setKeySelectionState: (state: SelectionState) => {
+    setSelectionState: (state: SelectionState) => {
       selectionState = state;
     },
-    clearKeySelectionState: () => {
+    clearSelectionState: () => {
       selectionState = null;
     },
   };
@@ -142,13 +141,15 @@ function registerCommandListeners(
       return false;
     }
 
-    const selectionState = pluginState.getKeySelectionState();
-    if (!selectionState) return false;
+    const selectionState = pluginState.getSelectionState();
+    if (!selectionState) {
+      return false;
+    }
 
-    return $handleKeySelectionOnBox(
+    return $handleSelectionOnBox(
       selection,
-      selectionState.isBackward,
       selectionState.granularity,
+      selectionState.isBackward,
     );
   };
 
@@ -199,11 +200,11 @@ function registerEventHandlers(
   const onKeyDown = (event: KeyboardEvent) => {
     const key = event.key;
     if (key !== "ArrowRight" && key !== "ArrowLeft") {
-      pluginState.clearKeySelectionState();
+      pluginState.clearSelectionState();
       return;
     }
 
-    pluginState.setKeySelectionState({
+    pluginState.setSelectionState({
       granularity: event.ctrlKey ? "word" : "character",
       isBackward: key === "ArrowLeft",
     });
@@ -215,19 +216,15 @@ function registerEventHandlers(
       return;
     }
 
-    editor.update(
-      () => {
-        const sel = $getSelection();
-        if (!$isRangeSelection(sel) || sel.isCollapsed()) {
-          return;
-        }
+    pluginState.setSelectionState({ granularity: "character" });
 
-        $handlePointerSelectionOnBox(sel);
-      },
-      {
-        skipTransforms: true,
-      },
-    );
+    // Dispatch a selection change command so our callback is called to
+    // make required changes to the current selection. Also, do this
+    // only for "mouse" type since this is automatically done by the
+    // browser for touch devices.
+    if (event.pointerType === "mouse") {
+      editor.dispatchCommand(SELECTION_CHANGE_COMMAND, undefined);
+    }
   };
 
   root.addEventListener("keydown", onKeyDown);

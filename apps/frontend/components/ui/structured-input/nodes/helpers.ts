@@ -63,23 +63,15 @@ export function $isBoxGroupNode(node: unknown): node is BoxGroupNodes {
   );
 }
 
-export function shouldSkipSelectionPoint(
-  point: PointType,
-  isRangeSelection: boolean,
-) {
-  return isRangeSelection
-    ? $isBoxBoundaryNode(point.getNode())
-    : !canPlaceCaretAtPoint(point);
-}
-
-export function canPlaceCaretAtPoint(point: PointType) {
+export function shouldSkipPoint(point: PointType) {
   const node = point.getNode();
   const { offset } = point;
 
-  return $isBoxBoundaryNode(node)
+  const canPlaceCaretHere = $isBoxBoundaryNode(node)
     ? (offset === 0 && node.canPlaceCaretBefore()) ||
-        (offset === node.getTextContentSize() && node.canPlaceCaretAfter())
+      (offset === node.getTextContentSize() && node.canPlaceCaretAfter())
     : true;
+  return !canPlaceCaretHere;
 }
 
 export function $getNextCharacterNode(

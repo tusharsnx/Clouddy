@@ -52,8 +52,6 @@ export class BoxBoundaryNode extends TextNode {
         return false;
       case "inner":
         return false;
-      default:
-        return false;
     }
   }
 
@@ -65,8 +63,6 @@ export class BoxBoundaryNode extends TextNode {
         return true;
       case "inner":
         return true;
-      default:
-        return false;
     }
   }
 

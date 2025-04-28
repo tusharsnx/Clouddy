@@ -1,24 +1,21 @@
 import { $moveCaretSelection, $moveCharacter } from "@lexical/selection";
 import {
   $getCharacterOffsets,
-  $getPreviousSelection,
   $isDecoratorNode,
   $isElementNode,
   $isLineBreakNode,
   $isTextNode,
   $setSelection,
   type NodeSelection,
-  type Point,
   type RangeSelection,
 } from "lexical";
 import { $isBoxBoundaryNode } from "#/components/ui/structured-input/nodes/box-boundary-node";
-import { $isBoxNode } from "#/components/ui/structured-input/nodes/box-node";
 import { $isBoxTextNode } from "#/components/ui/structured-input/nodes/box-text-node";
 import {
   $getBoxRootByGroupNode,
   $getNextCharacterNode,
   $isBoxGroupNode,
-  shouldSkipSelectionPoint,
+  shouldSkipPoint,
 } from "#/components/ui/structured-input/nodes/helpers";
 
 // This is taken from gh/lexical:
@@ -138,101 +135,38 @@ export function $skipBoxNodesBeforeDeletion(
 /**
  * Moves or extends the selection according to the input.
  * @param selection The selection object to modify.
- * @param isBackward The direction in which selection needs to be modified.
  * @param granularity The level of modification to apply.
+ * @param isBackward The direction in which selection needs to be modified.
  * @returns True, if caret was moved at all, else False.
  */
-export function $handleKeySelectionOnBox(
+export function $handleSelectionOnBox(
   selection: RangeSelection,
-  isBackward: boolean,
   granularity: "character" | "word",
+  isBackward?: boolean,
 ) {
   return selection.isCollapsed()
-    ? $handleCaretSelectionOnBox(selection, isBackward, granularity)
-    : $handleRangeSelectionOnBox(selection, isBackward);
+    ? $handleCaretSelection(selection, granularity, isBackward)
+    : $handleRangeSelection(selection, isBackward);
 }
 
-// Todo: Try with $extendCaretToRange()
-function $handleCaretSelectionOnBox(
+function $handleRangeSelection(
   selection: RangeSelection,
-  isBackward: boolean,
-  granularity: "character" | "word",
-) {
-  const newSelection: RangeSelection = selection.clone();
-
-  // Track changes made to the selection.
-  const initialSelection = selection.clone();
-  const isInitialSelectionBackward = initialSelection.isBackward();
-  let isRangeSelection = !initialSelection.isCollapsed();
-
-  // This is to track when selection stops moving so we can stop the
-  // loop and avoid running it endlessly. This happens when we've
-  // reached the end of the text.
-  let lastSelection: RangeSelection | null = null;
-  let hasDirectionChanged = false;
-
-  // A narrowing range selection first collapses, and then expands in
-  // the opposite direction. It can't do both in the same event. This
-  // only applies for a character-wise modification.
-  const isNarrowing = isInitialSelectionBackward !== isBackward;
-  const collapseOnDirectionChange =
-    isRangeSelection && granularity === "character" && isNarrowing;
-
-  while (
-    shouldSkipSelectionPoint(newSelection.focus, isRangeSelection) &&
-    !newSelection.is(lastSelection) &&
-    !(collapseOnDirectionChange && hasDirectionChanged)
-  ) {
-    lastSelection = newSelection.clone();
-    $moveCaretSelection(
-      newSelection,
-      isRangeSelection,
-      isBackward,
-      granularity,
-    );
-    hasDirectionChanged =
-      isInitialSelectionBackward !== newSelection.isBackward();
-  }
-
-  if (collapseOnDirectionChange && hasDirectionChanged) {
-    const { anchor } = newSelection;
-    const { offset } = anchor;
-    anchor.getNode().select(offset, offset);
-    isRangeSelection = false;
-  }
-
-  // Undo the selection if we couldn't find a good node.
-  if (shouldSkipSelectionPoint(newSelection.focus, isRangeSelection)) {
-    const prevSelection = $getPreviousSelection()?.clone() ?? null;
-    $setSelection(prevSelection);
-    return false;
-  }
-
-  if (!newSelection.is(initialSelection)) {
-    $setSelection(newSelection);
-    return true;
-  }
-
-  return false;
-}
-
-function $handleRangeSelectionOnBox(
-  selection: RangeSelection,
-  isBackward: boolean,
+  isBackward?: boolean,
 ): boolean {
-  // No need to expand the selection if anchor or focus is within the same box node.
-  if (!$isPartialSelectionInBox(selection)) {
+  const anchorNode = selection.anchor.getNode();
+  const focusNode = selection.focus.getNode();
+
+  // No modification is required if both the anchor and focus are within the same BoxTextNode.
+  if ($isBoxTextNode(anchorNode) && anchorNode.is(focusNode)) {
     return false;
   }
 
-  const { anchor, focus } = selection;
-
-  const isSelectionBackward = selection.isBackward();
   const newSelection = selection.clone();
+  const isSelectionBackward = selection.isBackward();
 
   // Handle anchor node
-  if ($isPointWithinBoxNode(anchor)) {
-    const anchorBoxRoot = $getBoxRootByGroupNode(anchor.getNode());
+  if ($isBoxGroupNode(anchorNode)) {
+    const anchorBoxRoot = $getBoxRootByGroupNode(anchorNode);
     if (anchorBoxRoot) {
       newSelection.anchor.set(
         anchorBoxRoot.getKey(),
@@ -242,46 +176,38 @@ function $handleRangeSelectionOnBox(
     }
   }
 
+  const expandSelection =
+    isBackward === undefined || isBackward === isSelectionBackward;
+
   // Handle focus node
-  if ($isPointWithinBoxNode(focus)) {
-    const focusBoxRoot = $getBoxRootByGroupNode(focus.getNode());
+  if ($isBoxGroupNode(focusNode)) {
+    const focusBoxRoot = $getBoxRootByGroupNode(focusNode);
     if (focusBoxRoot) {
-      if (isSelectionBackward) {
-        if (isBackward) {
-          newSelection.focus.set(focusBoxRoot.getKey(), 0, "element");
-        } else {
-          const nextSibling = focusBoxRoot.getNextSibling();
-          if (nextSibling === null) {
-            return false;
-          }
-          const isSiblingElementNode = $isElementNode(nextSibling);
-          newSelection.focus.set(
-            nextSibling.getKey(),
-            0,
-            isSiblingElementNode ? "element" : "text",
-          );
-        }
+      if (expandSelection) {
+        newSelection.focus.set(
+          focusBoxRoot.getKey(),
+          isSelectionBackward ? 0 : focusBoxRoot.getChildrenSize(),
+          "element",
+        );
       } else {
-        if (isBackward) {
-          const prevSibling = focusBoxRoot.getPreviousSibling();
-          if (prevSibling === null) {
-            return false;
-          }
-          const isSiblingElementNode = $isElementNode(prevSibling);
-          newSelection.focus.set(
-            prevSibling.getKey(),
-            isSiblingElementNode
-              ? prevSibling.getChildrenSize()
-              : prevSibling.getTextContentSize(),
-            isSiblingElementNode ? "element" : "text",
-          );
-        } else {
-          newSelection.focus.set(
-            focusBoxRoot.getKey(),
-            focusBoxRoot.getChildrenSize(),
-            "element",
-          );
+        const sibling = isSelectionBackward
+          ? focusBoxRoot.getNextSibling()
+          : focusBoxRoot.getPreviousSibling();
+        if (sibling === null) {
+          return false;
         }
+
+        const isSiblingElementNode = $isElementNode(sibling);
+        const key = sibling.getKey();
+        const offset = isSelectionBackward
+          ? // Move focus to the next sibling's first offset.
+            0
+          : // Move focus to the previous sibling's last (child) offset.
+            isSiblingElementNode
+            ? sibling.getChildrenSize()
+            : sibling.getTextContentSize();
+        const type = isSiblingElementNode ? "element" : "text";
+        newSelection.focus.set(key, offset, type);
       }
     }
   }
@@ -294,69 +220,29 @@ function $handleRangeSelectionOnBox(
   return false;
 }
 
-function $isPartialSelectionInBox(selection: RangeSelection) {
-  const anchorNode = selection.anchor.getNode();
-  const focusNode = selection.focus.getNode();
-  return !($isBoxTextNode(anchorNode) && anchorNode.is(focusNode));
-}
-
-function $isPointWithinBoxNode(point: Point) {
-  const node = point.getNode();
-  return (
-    $isBoxGroupNode(node) &&
-    !$isBoxNode(node) &&
-    !(
-      $isBoxBoundaryNode(node) &&
-      !node.isInner() &&
-      node.getIndexWithinParent() === 2 &&
-      point.offset === 1
-    ) &&
-    !(
-      $isBoxBoundaryNode(node) &&
-      !node.isInner() &&
-      node.getIndexWithinParent() === 0 &&
-      point.offset === 0
-    )
-  );
-}
-
-export function $handlePointerSelectionOnBox(selection: RangeSelection) {
-  if (selection.isCollapsed()) {
+// Todo: Try with $extendCaretToRange()
+function $handleCaretSelection(
+  selection: RangeSelection,
+  granularity: "character" | "word",
+  isBackward = true,
+): boolean {
+  if (!selection.isCollapsed()) {
     return false;
   }
 
-  // No need to expand the selection if anchor or focus is within the same box node.
-  if (!$isPartialSelectionInBox(selection)) {
-    return false;
-  }
+  const newSelection: RangeSelection = selection.clone();
 
-  const { anchor, focus } = selection;
+  // This is to track when selection stops moving so we can stop the
+  // loop and avoid running it endlessly. This happens when we've
+  // reached the end of the text.
+  let lastSelection: RangeSelection | null = null;
 
-  const isSelectionBackward = selection.isBackward();
-  const newSelection = selection.clone();
-
-  // Handle anchor node
-  if ($isPointWithinBoxNode(anchor)) {
-    const anchorBoxRoot = $getBoxRootByGroupNode(anchor.getNode());
-    if (anchorBoxRoot) {
-      newSelection.anchor.set(
-        anchorBoxRoot.getKey(),
-        isSelectionBackward ? anchorBoxRoot.getChildrenSize() : 0,
-        "element",
-      );
-    }
-  }
-
-  // Handle focus node
-  if ($isPointWithinBoxNode(focus)) {
-    const focusBoxRoot = $getBoxRootByGroupNode(focus.getNode());
-    if (focusBoxRoot) {
-      newSelection.focus.set(
-        focusBoxRoot.getKey(),
-        isSelectionBackward ? 0 : focusBoxRoot.getChildrenSize(),
-        "element",
-      );
-    }
+  while (
+    shouldSkipPoint(newSelection.focus) &&
+    !newSelection.is(lastSelection)
+  ) {
+    lastSelection = newSelection.clone();
+    $moveCaretSelection(newSelection, false, isBackward, granularity);
   }
 
   if (!newSelection.is(selection)) {
